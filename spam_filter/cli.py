@@ -1,4 +1,4 @@
-"""Dòng lệnh:  python -m spam_filter <eda|run|viz|predict> [tùy chọn]"""
+"""Dòng lệnh:  python -m spam_filter <eda|run|viz|check|predict> [tùy chọn]"""
 import argparse
 import logging
 from dataclasses import replace
@@ -77,6 +77,18 @@ def cmd_viz(args) -> None:
         print(stability(OUT_FIGURES, args.seeds).round(4).to_string())
 
 
+def cmd_check(args) -> None:
+    from .sanity import plot_learning_curve, run_checks  # import muộn
+    table = run_checks(args.model)
+    print(table.to_string(index=False))
+    bad = (table["trạng thái"] == "LỖI").sum()
+    warn = (table["trạng thái"] == "LƯU Ý").sum()
+    print(f"\nTổng kết: {len(table) - bad - warn} OK, {warn} lưu ý, {bad} lỗi")
+    OUT_RESULTS.mkdir(parents=True, exist_ok=True)
+    table.to_csv(OUT_RESULTS / "sanity_checks.csv", index=False)
+    plot_learning_curve(args.model, OUT_FIGURES)
+
+
 def cmd_predict(args) -> None:
     model_id = args.model or (BEST_FILE.read_text().strip() if BEST_FILE.exists() else None)
     if not model_id or not (OUT_MODELS / f"{model_id}.joblib").exists():
@@ -111,6 +123,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_viz.add_argument("--stability", action="store_true", help="Thêm thí nghiệm lặp nhiều random_state (chậm hơn)")
     p_viz.add_argument("--seeds", type=int, default=10, help="Số lần chia ngẫu nhiên cho --stability")
     p_viz.set_defaults(func=cmd_viz)
+
+    p_chk = sub.add_parser("check", help="Kiểm tra rò rỉ dữ liệu / học thuộc / baseline đơn giản")
+    p_chk.add_argument("--model", default="E5", help="ID thí nghiệm cần kiểm tra (mặc định E5)")
+    p_chk.set_defaults(func=cmd_check)
 
     p_pred = sub.add_parser("predict", help="Dự đoán tin nhắn mới")
     p_pred.add_argument("texts", nargs="+")
