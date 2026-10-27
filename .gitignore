@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Dataset & artefacts: tái tạo được bằng code, không commit
+data/raw/*
+!data/raw/.gitkeep
+data/processed/
+outputs/models/*.joblib
+
+outputs/figures/*.png
+outputs/results/*.csv
+outputs/results/*.txt
