@@ -86,29 +86,33 @@ outputs/{figures,results,models}/   # kết quả sinh ra
 
 ## Kết quả
 
-Chia train/test 80/20 (stratify, `random_state=42`); mô hình tốt nhất (⭐) chọn theo **F1 lớp spam qua CV trên tập train**.
-Số liệu trên tập test (1032 tin, 128 spam), từ `outputs/results/metrics.csv`:
+Kết quả dưới đây được tái chạy trên corpus đi kèm: bỏ trùng trước khi chia, train/test 80/20 phân tầng với `random_state=42`.
+**CV F1** là trung bình 5-fold chỉ trên tập train; các cột Test chỉ dùng held-out test (1,032 tin, gồm 128 spam).
+Confusion matrix viết theo thứ tự `[TN, FP, FN, TP]`. Bảng được tạo từ `outputs/results/metrics.csv`.
 
-| ID | Mô tả | Accuracy | Precision | Recall | F1 (spam) | ROC-AUC | CV F1 (train) |
-|----|-------|----------|-----------|--------|-----------|---------|---------------|
-| E0 | Baseline: BoW + MultinomialNB mặc định | 0.9826 | 0.9508 | 0.9062 | 0.9280 | 0.9790 | 0.9385 |
-| E1 | TF-IDF unigram + MultinomialNB | 0.9719 | 0.9901 | 0.7812 | 0.8734 | 0.9832 | 0.8512 |
-| E2 | TF-IDF (1,2)-gram + MultinomialNB | 0.9845 | 0.9746 | 0.8984 | 0.9350 | 0.9882 | 0.9365 |
-| E3 | TF-IDF + K-NN (cosine) | 0.9758 | 0.9640 | 0.8359 | 0.8954 | 0.9682 | 0.8935 |
-| E4 | TF-IDF + Decision Tree | 0.9700 | 0.9450 | 0.8047 | 0.8692 | 0.8954 | 0.8086 |
-| E5 ⭐ | Ablation: E2 + token hóa URL/tiền/số, bỏ dấu câu | 0.9864 | 0.9750 | 0.9141 | 0.9435 | 0.9905 | 0.9414 |
-| E6 | Ablation: E2 + bỏ stopword | 0.9845 | 0.9746 | 0.8984 | 0.9350 | 0.9920 | 0.9283 |
+Môi trường tái chạy: Python 3.14.6, scikit-learn 1.9.0, NumPy 2.4.6, pandas 3.0.3. `requirements.txt` đặt phiên bản tối thiểu, không khóa phiên bản; vì vậy kết quả có thể khác giữa môi trường.
 
-**Kiểm tra độ tin cậy** (`python -m spam_filter check`, `outputs/results/sanity_checks.csv`): không có tin trùng chính xác
-giữa train và test; xáo nhãn train thì F1 test rơi về mức đoán mò (≈ 0.1) ⇒ không học thuộc; F1 train − test ≈ 0.04.
-E1 và E4 kém hơn baseline đơn giản (độ dài + số chữ số, F1 0.886).
+| ID | Mô tả | CV F1 (5-fold train) | Test Accuracy | Test Precision | Test Recall | Test F1 (spam) | Test ROC-AUC | Test CM [TN, FP, FN, TP] |
+|----|-------|--------------------:|--------------:|---------------:|------------:|---------------:|-------------:|-------------------------|
+| E0 | Baseline: BoW + MultinomialNB mặc định | 0.9385 | 0.9826 | 0.9508 | 0.9062 | 0.9280 | 0.9790 | [898, 6, 12, 116] |
+| E1 | TF-IDF unigram + MultinomialNB | 0.8512 | 0.9719 | 0.9901 | 0.7812 | 0.8734 | 0.9832 | [903, 1, 28, 100] |
+| E2 | TF-IDF (1,2)-gram + MultinomialNB | 0.9365 | 0.9845 | 0.9746 | 0.8984 | 0.9350 | 0.9882 | [901, 3, 13, 115] |
+| E3 | TF-IDF + K-NN (cosine) | 0.8935 | 0.9758 | 0.9640 | 0.8359 | 0.8954 | 0.9685 | [900, 4, 21, 107] |
+| E4 | TF-IDF + Decision Tree | 0.8086 | 0.9700 | 0.9450 | 0.8047 | 0.8692 | 0.8954 | [898, 6, 25, 103] |
+| E5 ⭐ | Ablation: E2 + token hóa URL/tiền/số, bỏ dấu câu | 0.9425 | 0.9864 | 0.9750 | 0.9141 | 0.9435 | 0.9905 | [901, 3, 11, 117] |
+| E6 | Ablation: E2 + bỏ stopword | 0.9283 | 0.9845 | 0.9746 | 0.8984 | 0.9350 | 0.9920 | [901, 3, 13, 115] |
+
+E5 có CV F1 cao hơn E2 **0.0060** trong lần chạy này. Chênh lệch nhỏ đó, từ một phép CV 5-fold duy nhất, **không chứng minh E5 tốt hơn có ý nghĩa thống kê**.
+
+README trước đây (commit `c6feafa`) ghi E3 ROC-AUC 0.9682 và E5 CV F1 0.9414; hai số đó được giữ lại ở đây như kết quả lịch sử, không phải kết quả hiện tại. Với cùng môi trường hiện tại, chạy preprocessing trước Task 1 cho E5 CV F1 0.9414; preprocessing URL hiện tại cho 0.9425. E3 cho ROC-AUC 0.9685 khi chạy lại, kể cả với source trước Task 1; môi trường tạo ra số 0.9682 không được ghi lại nên chưa thể xác định nguyên nhân chính xác.
+
+`python -m spam_filter check` tính lại các kiểm tra rò rỉ, bản gần trùng, xáo nhãn, CV và baseline đơn giản trên dữ liệu đang cấu hình; kết quả lưu ở `outputs/results/sanity_checks.csv` và phụ thuộc dữ liệu/split.
 
 ## Hạn chế
 
 - Chỉ **tiếng Anh**: tin tiếng Việt gần như không có từ nào nằm trong từ vựng nên kết quả không đáng tin.
 - Dữ liệu **cũ (~2012), nhỏ, và ham/spam đến từ hai nguồn khác nhau** (ham chủ yếu từ sinh viên NUS Singapore, spam từ
-  diễn đàn Grumbletext của Anh) ⇒ điểm cao đúng trong phạm vi bộ dữ liệu này, có thể lạc quan với spam hiện đại.
-  Thử nhanh bằng vài tin tự viết cho thấy mô hình bỏ sót nhiều spam kiểu mới (giả mạo ngân hàng, link rút gọn).
+  diễn đàn Grumbletext của Anh). Kết quả này chỉ mô tả corpus và split trên, **không chứng minh khả năng tổng quát hóa sang SMS hiện đại**.
 - Tập test chỉ có 128 tin spam nên F1 dao động theo cách chia dữ liệu (xem `viz --stability`).
 - Cải thiện: thêm dữ liệu spam hiện đại/đa ngôn ngữ, đặc trưng link rút gọn, class weight, chỉnh ngưỡng ưu tiên Precision.
 
