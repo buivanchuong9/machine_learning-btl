@@ -116,15 +116,17 @@ def plot_learning_curve(model_id: str, out: Path, cfg: Optional[DataConfig] = No
         build_pipeline(get_experiments([model_id])[0]), X_train, y_train, scoring="f1",
         train_sizes=np.linspace(0.1, 1.0, 8),
         cv=StratifiedKFold(5, shuffle=True, random_state=RANDOM_STATE))
+    train_mean, val_mean = train_s.mean(axis=1), val_s.mean(axis=1)
+    final_gap = train_mean[-1] - val_mean[-1]
     fig, ax = plt.subplots(figsize=(8, 4.4))
-    for scores, color, label in ((train_s, MUTED, "Điểm trên dữ liệu đã học (train)"),
-                                 (val_s, PURPLE, "Điểm trên dữ liệu chưa thấy (validation)")):
-        m, s = scores.mean(axis=1), scores.std(axis=1)
-        ax.fill_between(sizes, m - s, m + s, color=color, alpha=0.15)
-        ax.plot(sizes, m, color=color, linewidth=2, marker="o", markersize=5)
-        ax.text(sizes[-1], m[-1], f"  {label}", color=INK, va="center", fontsize=9)
-    ax.set(title=f"Đường cong học ({model_id}): validation ổn định ~0,94, chỉ kém train ~0,04",
+    for scores, mean, color, label in ((train_s, train_mean, MUTED, "Điểm trên dữ liệu đã học (train)"),
+                                       (val_s, val_mean, PURPLE, "Điểm validation qua CV")):
+        s = scores.std(axis=1)
+        ax.fill_between(sizes, mean - s, mean + s, color=color, alpha=0.15)
+        ax.plot(sizes, mean, color=color, linewidth=2, marker="o", markersize=5)
+        ax.text(sizes[-1], mean[-1], f"  {label}", color=INK, va="center", fontsize=9)
+    ax.set(title=f"Đường cong học ({model_id}): CV F1 cuối {val_mean[-1]:.3f}, train−CV {final_gap:+.3f}",
            xlabel="Số tin nhắn dùng để huấn luyện", ylabel="F1 lớp spam",
            xlim=(sizes[0] * 0.9, sizes[-1] * 1.7))
     _save(fig, out / "viz_9_learning_curve.png")
-    return pd.DataFrame({"n_train": sizes, "train_f1": train_s.mean(axis=1), "val_f1": val_s.mean(axis=1)})
+    return pd.DataFrame({"n_train": sizes, "train_f1": train_mean, "val_f1": val_mean})

@@ -42,6 +42,19 @@ def _save(fig, path: Path) -> None:
     log.info("Đã lưu %s", path.name)
 
 
+def _metric_limits(values, padding=0.02):
+    values = np.asarray(values, dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size == 0:
+        return 0.0, 1.05
+    lower = max(0.0, float(values.min()) - padding)
+    upper = min(1.05, float(values.max()) + padding)
+    if upper <= lower:
+        lower = max(0.0, lower - padding)
+        upper = min(1.05, upper + padding)
+    return lower, upper
+
+
 def _top_words(texts, n=12):
     c = Counter(w for t in texts for w in t.lower().split()
                 if w.isalpha() and len(w) > 2 and w not in ENGLISH_STOP_WORDS)
@@ -51,19 +64,29 @@ def _top_words(texts, n=12):
 def chart_balance_length(df, out):
     fig, (a, b) = plt.subplots(1, 2, figsize=(10, 3.8), gridspec_kw={"width_ratios": [1, 1.5]})
     counts = df["label"].value_counts().sort_index()
-    bars = a.bar(["ham", "spam"], counts.values, color=[HAM, SPAM], width=0.55)
+    names = {0: "ham", 1: "spam"}
+    labels = [names.get(label, str(label)) for label in counts.index]
+    colors = [HAM if label == 0 else SPAM if label == 1 else MUTED for label in counts.index]
+    bars = a.bar(labels, counts.values, color=colors, width=0.55)
     for bar, v in zip(bars, counts.values):
         a.text(bar.get_x() + bar.get_width() / 2, v, f"{v:,}\n({v / counts.sum():.1%})",
                ha="center", va="bottom", color=INK)
-    a.set(title="Spam chỉ chiếm ~12% dữ liệu", ylabel="Số tin nhắn", ylim=(0, counts.max() * 1.18))
+    spam_share = counts.get(1, 0) / counts.sum() if counts.sum() else None
+    balance_title = f"Phân bố lớp (spam: {spam_share:.1%})" if spam_share is not None else "Phân bố lớp"
+    max_count = counts.max() if not counts.empty else 0
+    a.set(title=balance_title, ylabel="Số tin nhắn", ylim=(0, max(1, max_count * 1.18)))
     a.grid(axis="x", visible=False)
     for label, color, name in ((0, HAM, "ham"), (1, SPAM, "spam")):
         b.hist(df.loc[df.label == label, "text"].str.len(), bins=45, range=(0, 400),
                density=True, alpha=0.75, color=color, label=name, edgecolor=SURFACE, linewidth=0.5)
     med = df.groupby("label")["text"].apply(lambda s: s.str.len().median())
-    b.set(title="Spam dài hơn hẳn tin thường", xlabel="Số ký tự (cắt ở 400)", ylabel="Mật độ")
+    median_text = " · ".join(
+        f"{name} {med.get(label):.0f}" if np.isfinite(med.get(label, np.nan)) else f"{name} n/a"
+        for label, name in ((0, "ham"), (1, "spam"))
+    )
+    b.set(title="Độ dài tin nhắn theo nhãn", xlabel="Số ký tự (cắt ở 400)", ylabel="Mật độ")
     b.legend(frameon=False)
-    b.text(0.98, 0.62, f"trung vị: ham {med[0]:.0f} · spam {med[1]:.0f} ký tự",
+    b.text(0.98, 0.62, f"trung vị: {median_text} ký tự",
            transform=b.transAxes, ha="right", color=MUTED)
     _save(fig, out / "viz_1_class_balance.png")
 
@@ -100,7 +123,8 @@ def chart_models(results, out):
     labels = [f"{i}  {d.split(': ', 1)[-1][:38]}" for i, d in zip(r["id"], r["description"])]
     fig, ax = plt.subplots(figsize=(10, 4.4))
     _dumbbell(ax, labels, r["cv_f1_train"].values, r["f1"].values,
-              "F1 qua CV (train)", "F1 trên test", MUTED, PURPLE, (0.8, 1.0))
+              "F1 qua CV (train)", "F1 trên test", MUTED, PURPLE,
+              _metric_limits(np.r_[r["cv_f1_train"].values, r["f1"].values], padding=0.03))
     ax.set(title="So sánh các thí nghiệm – F1 lớp spam", xlabel="F1 (nhãn: CV / test)")
     _save(fig, out / "viz_3_model_comparison.png")
 
@@ -119,14 +143,15 @@ def chart_precision_recall(results, out):
     ax.set(title="Precision và Recall – góc trên-phải là tốt nhất",
            xlabel="Recall (bắt được bao nhiêu spam)",
            ylabel="Precision (chặn đúng bao nhiêu)")
-    ax.set_xlim(results["recall"].min() - 0.02, 1.0)
-    ax.set_ylim(results["precision"].min() - 0.02, 1.0)
+    ax.set_xlim(*_metric_limits(results["recall"], padding=0.02))
+    ax.set_ylim(*_metric_limits(results["precision"], padding=0.02))
     _save(fig, out / "viz_4_precision_recall.png")
 
 
 def chart_confusion(y_test, pred, best_id, out):
     cm = confusion_matrix(y_test, pred, labels=[0, 1])
-    norm = cm / cm.sum(axis=1, keepdims=True)
+    row_totals = cm.sum(axis=1, keepdims=True)
+    norm = np.divide(cm, row_totals, out=np.zeros_like(cm, dtype=float), where=row_totals != 0)
     fig, ax = plt.subplots(figsize=(5.2, 4.4))
     ax.imshow(norm, cmap="Blues", vmin=0, vmax=1)
     ax.grid(False)
@@ -145,9 +170,12 @@ def chart_overfit(rows, out):
     rows = sorted(rows, key=lambda r: -r["test"])  # tốt nhất ở trên cùng
     labels = [r["id"] for r in rows]
     fig, ax = plt.subplots(figsize=(10, 4.2))
+    gaps = np.array([r["train"] - r["test"] for r in rows])
+    gap_text = f"{gaps.min():+.3f} đến {gaps.max():+.3f}" if gaps.size else "không có dữ liệu"
     _dumbbell(ax, labels, np.array([r["train"] for r in rows]), np.array([r["test"] for r in rows]),
-              "F1 trên train", "F1 trên test", MUTED, PURPLE, (0.8, 1.02))
-    ax.set(title="Không học thuộc: điểm train chỉ cao hơn test 0,04–0,07",
+              "F1 trên train", "F1 trên test", MUTED, PURPLE,
+              _metric_limits([value for row in rows for value in (row["train"], row["test"])], padding=0.03))
+    ax.set(title=f"Khoảng cách F1 train−test: {gap_text}",
            xlabel="F1 lớp spam (nhãn: train / test)")
     _save(fig, out / "viz_6_overfitting_check.png")
 
@@ -164,8 +192,9 @@ def chart_threshold(pipe, X_test, y_test, best_id, out):
     ax.text(ts[-1], rec[-1], " Recall", color=INK, va="center")
     ax.axvline(0.5, color=MUTED, linestyle=":", linewidth=1.2)
     ax.text(0.51, 0.43, "ngưỡng mặc định 0,5", color=MUTED, fontsize=9)
-    ax.set(title=f"Đổi ngưỡng quyết định ({best_id}): tăng Precision thì giảm Recall",
-           xlabel="Ngưỡng xác suất để gọi là spam", ylabel="Điểm", ylim=(0.4, 1.02), xlim=(0.05, 1.08))
+    ax.set(title=f"Precision và Recall theo ngưỡng ({best_id})",
+           xlabel="Ngưỡng xác suất để gọi là spam", ylabel="Điểm",
+           ylim=_metric_limits(np.r_[prec, rec], padding=0.02), xlim=(0.05, 1.08))
     _save(fig, out / "viz_7_threshold_tradeoff.png")
 
 
@@ -214,12 +243,13 @@ def stability(out: Path, n_seeds: int = 10) -> "pd.DataFrame":
         ax.hlines(y, row["min"], row["max"], color=GRID, linewidth=6, zorder=1)
         ax.scatter(vals, np.full_like(vals, y), s=26, color=PURPLE, alpha=0.55, zorder=2, edgecolor="none")
         ax.scatter(row["mean"], y, s=110, color=PURPLE, zorder=3, edgecolor=SURFACE, linewidth=1.5)
-        ax.text(row["max"] + 0.004, y, f"{row['mean']:.3f} ± {row['std']:.3f}", va="center", color=MUTED, fontsize=9)
+        spread = f" ± {row['std']:.3f}" if np.isfinite(row["std"]) else ""
+        ax.text(row["max"] + 0.004, y, f"{row['mean']:.3f}{spread}", va="center", color=MUTED, fontsize=9)
     ax.set_yticks(range(len(stats)), stats.index)
     ax.invert_yaxis()
     ax.grid(axis="y", visible=False)
-    ax.set(title=f"F1 qua {n_seeds} lần chia ngẫu nhiên: các mô hình tốt nhất chồng lên nhau",
+    ax.set(title=f"F1 qua {n_seeds} lần chia ngẫu nhiên",
            xlabel="F1 lớp spam trên test (chấm nhỏ = mỗi lần chia, chấm lớn = trung bình ± độ lệch chuẩn)",
-           xlim=(0.78, 1.0))
+           xlim=_metric_limits(res["f1"], padding=0.03))
     _save(fig, out / "viz_8_f1_stability.png")
     return stats
