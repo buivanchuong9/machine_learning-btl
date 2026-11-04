@@ -52,7 +52,7 @@ st.markdown("""
 .stApp [data-testid="stMarkdownContainer"],.stApp [data-testid="stCaptionContainer"],.stApp [data-baseweb="select"] div
   {font-family:var(--f-body)!important}
 .stApp h1,.stApp h2,.stApp h3,.side-brand .bt,.ph-badge,[data-testid="stMetricValue"],[data-testid="stMetricValue"] div,
-.flow .fs b,.res-prob b,.res-tag,.side-sum .sc-f b,.side-sum .sc-pr b,.errbox .num,.result .rid,.result .rstats b,
+.flow .fs b,.res-prob b,.res-tag,.side-sum b,.errbox .num,.result .rid,.result .rstats b,
 .strip b,.cmp b{font-family:var(--f-head)!important}
 .stApp [data-testid="stMetricValue"] [data-testid="stMarkdownContainer"],
 .stApp [data-testid="stMetricValue"] [data-testid="stMarkdownContainer"] *{font-family:var(--f-head)!important}
@@ -79,13 +79,13 @@ hr{border-color:var(--line);margin:.6rem 0}
 [data-testid="stMarkdownContainer"]:has(> .errgrid),[data-testid="stMarkdownContainer"]:has(> .result),
 [data-testid="stMarkdownContainer"]:has(> .res),[data-testid="stMarkdownContainer"]:has(> .cards){margin-bottom:0!important}
 
-/* ---------- 3. thanh bên: nền bạc nhạt, ít đường kẻ, các mục thụt vào hai bên ----------
-   mục đang mở = khối xám than chữ trắng, bo nhẹ 8px, không chạm mép (bớt cứng); không bóng, không viền */
+/* ---------- 3. thanh bên: nền bạc nhạt; Demo là thẻ riêng, 8 bước là stepper theo pipeline ----------
+   mục đang mở = nền trắng nổi + vòng số tô đặc; đường dọc tô đậm tới bước đang mở */
 [data-testid="stSidebar"],[data-testid="stSidebar"]>div,[data-testid="stSidebarContent"]{background:#EEF0F3!important}
 [data-testid="stSidebar"]{border-right:1px solid #DFE2E6!important}
 [data-testid="stSidebarUserContent"]{padding:0 0 1.5rem 0!important}
 [data-testid="stSidebar"] [data-testid="stSidebarHeader"] button,[data-testid="stSidebar"] [data-testid="stSidebarHeader"] span{
-  color:#6B6F75!important}
+  color:#5F6368!important}
 /* logo + tên ứng dụng ở góc trên-trái, cùng hàng với nút thu gọn « (kéo lên vùng đầu trống của thanh bên).
    pointer-events:none để khối này không che mất nút « khi nằm chồng lên vùng đầu. */
 [data-testid="stSidebar"] [data-testid="stElementContainer"]:has(.side-brand){margin-top:-63px!important;
@@ -96,42 +96,99 @@ hr{border-color:var(--line);margin:.6rem 0}
   align-items:center;justify-content:center}
 .side-brand .logo svg{width:18px;height:18px;stroke:#FFFFFF}
 .side-brand .bt{white-space:nowrap;font-size:15.5px;font-weight:600;letter-spacing:-.01em;line-height:1.2;color:#1A1A1A}
-.side-brand .bt small{display:block;font-family:var(--f-body);font-size:12px;font-weight:400;color:#6B6F75;
+.side-brand .bt small{display:block;font-family:var(--f-body);font-size:12px;font-weight:400;color:#5F6368;
   margin-top:2px;letter-spacing:.01em}
-/* danh sách trang: khung chứa tràn mép (bù lề ~30px của Streamlit), từng mục thụt 14px hai bên */
+/* danh sách trang: khung tràn mép (bù lề 30px của Streamlit), từng mục thụt 14px hai bên.
+   Hình học cố định để đường dọc khớp tâm vòng số: Demo cao 48px, mỗi bước 40px, cách nhau 2px, nhãn nhóm chiếm 28px
+   → tâm bước 1..8 cách đỉnh danh sách 108 · 150 · 220 · 262 · 332 · 374 · 444 · 486px.
+   Đổi một kích thước nào ở đây thì phải sửa lại các số top/height của đường dọc bên dưới. */
 [data-testid="stSidebar"] [data-testid="stElementContainer"]:has([data-testid="stButtonGroup"]){
   margin:0 -30px!important;width:calc(100% + 60px)!important;max-width:none!important}
 [data-testid="stSidebar"] [data-testid="stButtonGroup"],
 [data-testid="stSidebar"] [data-testid="stButtonGroup"] div:not(button div){width:100%!important;max-width:100%!important}
 [data-testid="stSidebar"] [data-testid="stButtonGroup"]>div{display:flex!important;flex-direction:column!important;
-  flex-wrap:nowrap!important;gap:2px!important;align-items:stretch!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button{width:calc(100% - 28px)!important;margin:0 14px!important;
-  min-height:40px!important;justify-content:flex-start!important;padding:0 14px 0 16px!important;border:none!important;
-  border-radius:8px!important;background:transparent!important;box-shadow:none!important;transition:background .12s}
+  flex-wrap:nowrap!important;gap:2px!important;align-items:stretch!important;position:relative!important;counter-reset:step}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button{position:relative!important;overflow:visible!important;
+  width:calc(100% - 28px)!important;margin:0 14px!important;height:40px!important;min-height:40px!important;
+  justify-content:flex-start!important;padding:0 14px 0 16px!important;border:none!important;border-radius:8px!important;
+  background:transparent!important;box-shadow:none!important;transition:background-color .2s,box-shadow .2s,border-color .2s}
 [data-testid="stSidebar"] [data-testid="stButtonGroup"] button>div{justify-content:flex-start!important;width:100%;gap:12px}
 [data-testid="stSidebar"] [data-testid="stButtonGroup"] button p{font-size:16px!important;font-weight:400!important;
   color:#2B2B2B!important;text-align:left!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button [data-testid="stIconMaterial"]{font-size:20px!important;
-  color:#5F6368!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:hover{background:rgba(0,0,0,.05)!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button[aria-checked="true"]{background:#2B2B2B!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button[aria-checked="true"] p{color:#FFFFFF!important;font-weight:600!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button[aria-checked="true"] [data-testid="stIconMaterial"]{color:#FFFFFF!important}
-/* "Prediction Demo" tách khỏi 8 bước: khoảng trống + một vạch ngắn thụt vào (không chạy hết chiều ngang) */
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child{margin-bottom:15px!important;position:relative;
-  overflow:visible!important}
-[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child::after{content:"";position:absolute;left:16px;right:16px;
-  bottom:-9px;height:1px;background:#DCDFE3}
-/* kết quả: khối trắng bo nhẹ, không kẻ dòng; nhãn trái - số phải */
-.side-sum{margin:22px -16px 0;padding:12px 16px 8px;background:#FFFFFF;border-radius:8px;font-size:14.5px;color:#4A4F55}
-.side-sum .t{font-size:13px;color:#55595F;margin-bottom:4px}
-.side-sum .sc,.side-sum .sc-pr{display:block;background:none;border:none;border-radius:0}
-.side-sum .sc-m,.side-sum .sc-f,.side-sum .sc-pr div{display:flex;justify-content:space-between;align-items:baseline;
-  padding:6px 0;border:none}
-.side-sum .sc-f span,.side-sum .sc-pr span{display:inline;font-size:14.5px}
-.side-sum b{color:#1A1A1A;font-weight:600;font-size:15.5px;background:none;padding:0;border-radius:0;
-  font-family:var(--f-head)!important;font-variant-numeric:tabular-nums}
-.side-sum .sc-f b{font-size:21px;color:#1A1A1A;letter-spacing:-.01em;line-height:1.1}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button[aria-checked="false"]:hover{background:rgba(0,0,0,.05)!important}
+/* mục đang mở: nền trắng nổi trên nền bạc, chữ đậm. Không nhận bấm nữa (bấm lại thì st.pills sẽ bỏ chọn) */
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button[aria-checked="true"]{pointer-events:none;background:#FFFFFF!important;
+  box-shadow:0 0 0 1px #DCDFE4,0 1px 2px rgba(16,24,40,.06)!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button[aria-checked="true"] p{color:#1A1A1A!important;font-weight:600!important}
+/* Prediction Demo: thẻ viền mảnh tách khỏi 8 bước, gồm ô biểu tượng, tiêu đề và mũi tên › */
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child{height:48px!important;min-height:48px!important;
+  padding:0 34px 0 11px!important;border:1px solid #CDD1D6!important;border-radius:10px!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child[aria-checked="true"]{border-color:#2B2B2B!important;
+  box-shadow:none!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child span:has(>[data-testid="stIconMaterial"]){flex:none;
+  width:30px;height:30px;border-radius:8px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #D3D7DC;
+  transition:background-color .2s,box-shadow .2s}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child [data-testid="stIconMaterial"]{font-size:18px!important;
+  color:#2B2B2B!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child[aria-checked="true"] span:has(>[data-testid="stIconMaterial"]){
+  background:#2B2B2B;box-shadow:inset 0 0 0 1px #2B2B2B}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child[aria-checked="true"] [data-testid="stIconMaterial"]{
+  color:#FFFFFF!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child p{font-size:15.5px!important;font-weight:600!important;
+  line-height:20px!important;color:#1A1A1A!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:first-child::after{content:"";position:absolute;right:12px;top:50%;
+  width:16px;height:16px;margin-top:-8px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235F6368' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center/16px 16px no-repeat}
+/* 8 bước: vòng số đánh bằng CSS counter (nhãn chỉ còn tên bước). Chưa tới = viền xám · đã qua = viền đậm ·
+   đang mở = tô đặc, đổi màu trễ một chút cho khớp lúc đường dọc chạy tới */
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:not(:first-child){counter-increment:step}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:not(:first-child)>div::before{content:counter(step);flex:none;
+  position:relative;z-index:2;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font:600 11.5px/1 var(--f-head);background:#EEF0F3;color:#5F6368;box-shadow:inset 0 0 0 1.5px #B4B9C0;
+  transition:background-color .2s,color .2s,box-shadow .2s}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:not(:first-child):has(~button[aria-checked="true"])>div::before{
+  background:#FFFFFF;color:#2B2B2B;box-shadow:inset 0 0 0 1.5px #2B2B2B}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:not(:first-child)[aria-checked="true"]>div::before{
+  background:#2B2B2B;color:#FFFFFF;box-shadow:inset 0 0 0 1.5px #2B2B2B;transition-delay:.25s}
+/* nhãn nhóm (tiếng Việt) phía trên bước 1, 3, 5, 7, thẳng hàng với tên bước */
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:is(:nth-child(4),:nth-child(6),:nth-child(8)){margin-top:28px!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:nth-child(2){margin-top:38px!important}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:is(:nth-child(2),:nth-child(4),:nth-child(6),:nth-child(8))::before{
+  position:absolute;left:50px;top:-28px;height:26px;box-sizing:border-box;padding-top:9px;white-space:nowrap;pointer-events:none;
+  font:600 12.5px/15px var(--f-body);letter-spacing:.01em;color:#5F6368}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:nth-child(2)::before{content:"Dữ liệu"}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:nth-child(4)::before{content:"Tiền xử lý & Đặc trưng"}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:nth-child(6)::before{content:"Mô hình & Đánh giá"}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] button:nth-child(8)::before{content:"Diễn giải & Kết luận"}
+/* đường dọc nối tâm các vòng số: lớp xám cố định + lớp xám than dài tới bước đang mở.
+   Đổi bước thì chỉ đổi chiều cao lớp đậm, nên đường "chạy xuống" (hoặc rút lên) mượt; một màu, đầu vuông. */
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div::before,
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div::after{content:"";position:absolute;left:40px;top:108px;width:2px;
+  z-index:1;pointer-events:none}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div::before{height:378px;background:#CDD1D6}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div::after{height:0;background:#2B2B2B;
+  transition:height .45s cubic-bezier(.4,0,.2,1)}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(3)[aria-checked="true"])::after{height:42px}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(4)[aria-checked="true"])::after{height:112px}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(5)[aria-checked="true"])::after{height:154px}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(6)[aria-checked="true"])::after{height:224px}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(7)[aria-checked="true"])::after{height:266px}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(8)[aria-checked="true"])::after{height:336px}
+[data-testid="stSidebar"] [data-testid="stButtonGroup"]>div:has(>button:nth-child(9)[aria-checked="true"])::after{height:378px}
+@media (prefers-reduced-motion:reduce){
+  [data-testid="stSidebar"] [data-testid="stButtonGroup"]>div::after,
+  [data-testid="stSidebar"] [data-testid="stButtonGroup"] button>div::before{transition:none!important}
+}
+/* kết quả (giữ đúng 4 chỉ số): khối trắng viền mảnh + bóng nhẹ; mã mô hình là nhãn xám than; F1 nằm trên dải bạc, số lớn */
+.side-sum{margin:2px -16px 0;padding:12px 14px 8px;background:#FFFFFF;border-radius:10px;
+  box-shadow:0 0 0 1px #E1E4E8,0 2px 6px rgba(16,24,40,.06);font-size:14.5px;color:#4A4F55}
+.side-sum .t{font-size:12.5px;color:#55595F;padding-bottom:9px;margin-bottom:5px;border-bottom:1px solid #ECEEF1}
+.side-sum .r{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.side-sum b{color:#1A1A1A;font-weight:600;font-size:15.5px;font-family:var(--f-head)!important;
+  font-variant-numeric:tabular-nums}
+.side-sum .id{font-size:13px;line-height:20px;color:#FFFFFF;background:#2B2B2B;padding:0 9px;border-radius:6px;letter-spacing:.02em}
+.side-sum .f1{margin:4px -6px;padding:8px 6px;background:#F2F3F5;border-radius:8px}
+.side-sum .f1 span{font-weight:600;color:#2B2B2B}
+.side-sum .f1 b{font-size:26px;line-height:1.15;letter-spacing:-.01em}
 
 /* ---------- 4. tiêu đề ---------- */
 /* 4a. thanh tiêu đề trang (gọn): hàng 1 = ô số nhỏ + tên trang + tiến độ; hàng 2 = câu dẫn; kẻ mảnh bên dưới */
@@ -483,10 +540,14 @@ for _k in ("nav", "_page"):  # tên mục cũ còn lưu trong phiên đang mở 
     if st.session_state.get(_k) not in (None, *STEPS):
         st.session_state[_k] = STEPS[0]
 st.session_state.setdefault("nav", STEPS[0])
-ICONS = {STEPS[0]: ":material/mail:", STEPS[1]: ":material/database:", STEPS[2]: ":material/query_stats:",
-         STEPS[3]: ":material/cleaning_services:", STEPS[4]: ":material/data_array:",
-         STEPS[5]: ":material/model_training:", STEPS[6]: ":material/fact_check:",
-         STEPS[7]: ":material/report:", STEPS[8]: ":material/flag:"}
+ICONS = {STEPS[0]: ":material/chat:"}  # chỉ thẻ Demo có biểu tượng; 8 bước dùng vòng số vẽ bằng CSS (mục 3)
+
+
+def _nav_label(step):
+    """Nhãn trên thanh bên: bỏ tiền tố "1. " của các bước vì số đã nằm trong vòng tròn."""
+    return f"{ICONS[step]} {step}" if step in ICONS else step.split(". ", 1)[-1]
+
+
 with st.sidebar:
     # logo: phong thư có dấu tích (thư đã được kiểm tra / lọc)
     st.markdown('<div class="side-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -496,20 +557,18 @@ with st.sidebar:
                 '<span class="bt">Spam Filter<small>SMS Spam Classification</small></span></div>',
                 unsafe_allow_html=True)
     _sel = st.pills("Navigation", STEPS, key="nav", label_visibility="collapsed", on_change=_keep_nav,
-                    format_func=lambda o: f"{ICONS[o]} {o}")
+                    format_func=_nav_label)
     st.markdown(
-        # Khối điểm nhấn: F1 to ở giữa, mô hình ở trên, Precision/Recall chia đôi bên dưới
-        '<div class="side-sum"><div class="t">Test set results: ' + f'{len(X_test):,} messages</div>'
-        '<div class="sc">'
-        f'<div class="sc-m" title="Chọn theo F1-spam cross-validation trên tập train, không dùng tập test">'
-        f'<span>Best model</span><b>{best_id}</b></div>'
-        f'<div class="sc-f" title="Trung bình điều hòa của Precision và Recall cho lớp spam">'
+        # Khối kết quả: đúng 4 chỉ số; F1 làm điểm nhấn (dải bạc, số lớn), mã mô hình là nhãn xám than
+        f'<div class="side-sum"><div class="t">Test set results: {len(X_test):,} messages</div>'
+        '<div class="r" title="Chọn theo F1-spam cross-validation trên tập train, không dùng tập test">'
+        f'<span>Best model</span><b class="id">{best_id}</b></div>'
+        '<div class="r f1" title="Trung bình điều hòa của Precision và Recall cho lớp spam">'
         f'<span>F1 (spam)</span><b>{_b["f1"]:.3f}</b></div>'
-        '<div class="sc-pr">'
-        f'<div title="Trong các tin bị báo là spam, bao nhiêu % đúng là spam (cao = ít chặn nhầm tin thật)">'
+        '<div class="r" title="Trong các tin bị báo là spam, bao nhiêu % đúng là spam (cao = ít chặn nhầm tin thật)">'
         f'<span>Precision</span><b>{_b["precision"]:.3f}</b></div>'
-        f'<div title="Trong các tin spam thật, bao nhiêu % bắt được (cao = ít spam lọt qua)"><span>Recall</span>'
-        f'<b>{_b["recall"]:.3f}</b></div></div></div></div>', unsafe_allow_html=True)
+        '<div class="r" title="Trong các tin spam thật, bao nhiêu % bắt được (cao = ít spam lọt qua)">'
+        f'<span>Recall</span><b>{_b["recall"]:.3f}</b></div></div>', unsafe_allow_html=True)
 page = _sel or st.session_state.get("_page", STEPS[0])  # bấm lại mục đang chọn không làm mất trang
 st.session_state["_page"] = page
 
@@ -693,10 +752,10 @@ elif page == STEPS[1]:
                       "dạng <code>label&lt;TAB&gt;text</code>."),
             ("Nhãn", "<code>ham=0</code>, <code>spam=1</code> (spam là lớp dương để Precision/Recall có ý nghĩa)."),
             ("Bỏ tin trùng trước khi chia",
-             '→ tránh cùng một tin nằm cả ở train và test (rò rỉ).'),
+             '→ Tránh cùng một tin nằm cả ở train và test (rò rỉ).'),
             ("Chia dữ liệu", f"<code>test_size={cfg.test_size}</code>, <code>stratify</code> theo nhãn, "
                              f"<code>random_state={cfg.random_state}</code>."),
-            ("Giả định/giới hạn", "tin tiếng Anh (Anh, ~2012), dữ liệu nhỏ; spam hiện nay có thể khác.", "wide"),
+            ("Giả định/giới hạn", "Tin tiếng Anh (Anh, ~2012), dữ liệu nhỏ; spam hiện nay có thể khác.", "wide"),
         ])
     with right:
         split = pd.DataFrame({"Tập": ["Train", "Train", "Test", "Test"],
@@ -709,7 +768,7 @@ elif page == STEPS[1]:
     st.subheader("Xem thử dữ liệu")
     show = df.assign(nhãn=df["label"].map({0: "ham", 1: "spam"}))[["nhãn", "text"]]
     with st.container(border=True, key="ds_tool"):  # khung thao tác: lọc + bảng
-        which = st.radio("Lọc", ["tất cả", "ham", "spam"], horizontal=True)
+        which = st.radio("Lọc", ["Tất cả", "ham", "spam"], horizontal=True)
         if which != "tất cả":
             show = show[show["nhãn"] == which]
         st.dataframe(show.sample(min(200, len(show)), random_state=1), width="stretch", hide_index=True)
@@ -762,7 +821,7 @@ elif page == STEPS[2]:
         f = px.bar(top[::-1], x="số lần", y="từ", orientation="h", title=f"Top từ - {lab}",
                    color_discrete_sequence=[cmap[lab]])
         col.plotly_chart(fig_style(f, 120 + 22 * n), width="stretch")
-    note("Giả thuyết ban đầu", "spam chứa “free, call, txt, claim, prize…”, số điện thoại, ký hiệu tiền, "
+    note("Giả thuyết ban đầu", "Spam chứa “free, call, txt, claim, prize…”, số điện thoại, ký hiệu tiền, "
                                "và dài hơn ham.")
 
 
@@ -990,11 +1049,11 @@ else:
     st.subheader("Hạn chế & hướng phát triển")
     with st.container(key="concl_lim"):  # khung xám có vạch ngăn, như đầu trang 4 và 6
         cards([
-            ("Hạn chế", "dữ liệu nhỏ (5160 tin), tiếng Anh, spam thay đổi theo thời gian; "
+            ("Hạn chế", "Dữ liệu nhỏ (5160 tin), tiếng Anh, spam thay đổi theo thời gian; "
                         "Naive Bayes giả định từ độc lập."),
-            ("Ứng dụng thực tế", 'ưu tiên Precision (không chặn nhầm tin quan trọng) → tăng ngưỡng quyết định '
+            ("Ứng dụng thực tế", 'Ưu tiên Precision (không chặn nhầm tin quan trọng) → tăng ngưỡng quyết định '
                                  "(thử ở bước 6), tin nghi ngờ chuyển vào thư mục “Spam” thay vì xóa."),
-            ("Cải thiện", "class weight, thêm đặc trưng thủ công (độ dài, số chữ số), char n-gram, "
+            ("Cải thiện", "Class weight, thêm đặc trưng thủ công (độ dài, số chữ số), char n-gram, "
                           "sentence embeddings, cập nhật mô hình định kỳ."),
         ], cols=3)
     with st.expander("Toàn bộ biểu đồ đã xuất (outputs/figures)"):
