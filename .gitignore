@@ -4,6 +4,9 @@ __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/
 
+# Script chạy nhanh cá nhân: không bao giờ commit
+chay.ps1
+
 # Dataset & artefacts: tái tạo được bằng code, không commit
 data/raw/*
 !data/raw/.gitkeep
