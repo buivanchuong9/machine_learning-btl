@@ -1,0 +1,71 @@
+\chapter{ỨNG DỤNG THỰC TẾ VÀ SẢN PHẨM DEMO}
+
+\section{Ứng dụng web demo}
+
+Để minh họa mô hình hoạt động end-to-end, nhóm xây dựng ứng dụng web bằng Streamlit (tệp \texttt{app.py}). Ứng dụng đọc mô hình và kết quả đã lưu trong thư mục \texttt{outputs/}, nên \textit{không} huấn luyện lại khi mở, và đi theo đúng luồng của báo cáo: Demo dự đoán, Nguồn dữ liệu, EDA, Tiền xử lý, Đặc trưng, Mô hình, Đánh giá, Phân tích lỗi, Kết luận.
+
+Các chức năng chính của trang Demo:
+
+\begin{itemize}
+    \item \textbf{Dự đoán một tin nhắn}: nhập văn bản tiếng Anh, nhận nhãn spam/ham kèm xác suất.
+    \item \textbf{Kéo ngưỡng quyết định} (từ 0,05 đến 0,95): quan sát trực tiếp đánh đổi giữa chặn nhầm và bỏ lọt (xem Mục~5.5).
+    \item \textbf{Giải thích dự đoán}: hiển thị những từ đẩy tin về phía spam hoặc ham, dựa trên đóng góp của đặc trưng như ở Chương~6.
+    \item \textbf{Kiểm thử hàng loạt}: mỗi dòng là một tin, có thể gắn tiền tố \texttt{spam|} hoặc \texttt{ham|} để ứng dụng tự chấm đúng/sai.
+\end{itemize}
+
+Cách chạy (sau khi đã huấn luyện, Phụ lục~1):
+
+\begin{verbatim}
+python -m spam_filter run
+streamlit run app.py
+\end{verbatim}
+
+Ứng dụng cũng hỗ trợ dự đoán qua dòng lệnh: \texttt{python -m spam\_filter predict "Free entry! Call 0906... to win £500"}.
+
+\section{Khuyến nghị triển khai}
+
+Từ các kết quả ở Chương~5 và~6, nhóm đưa ra các khuyến nghị cho một bộ lọc SMS thực tế. Khuyến nghị nào chưa được kiểm chứng bằng thực nghiệm đều được ghi rõ.
+
+\subsection{Chọn mô hình}
+
+\begin{itemize}
+    \item \textbf{Dùng họ Naive Bayes làm mô hình cơ sở}: kết quả vượt K-NN và Cây quyết định ở mọi lần chia (Mục~5.3), huấn luyện chỉ mất vài giây, dự đoán nhanh và khả diễn giải. Giữa E0 (BoW), E2 và E5, khác biệt nằm trong dải nhiễu của phép đo, nên có thể ưu tiên cấu hình đơn giản nhất mà vẫn đạt mức tương đương; token hóa số/tiền/URL vẫn là một bước rẻ và có cơ sở lý thuyết.
+    \item \textbf{Không dùng K-NN cho triển khai trực tuyến}: chi phí dự đoán tăng theo kích thước tập huấn luyện và chất lượng thấp hơn.
+\end{itemize}
+
+\subsection{Chính sách ngưỡng theo chi phí lỗi}
+
+Thay vì ngưỡng 0,5 mặc định, nên thiết kế \textbf{chính sách ba mức} dựa trên xác suất, phù hợp với việc FP nặng hơn FN:
+
+\begin{table}[H]
+\centering
+\caption{Đề xuất chính sách xử lý theo xác suất spam}
+\label{tab:chinh-sach}
+\begin{tabular}{|p{3.4cm}|p{4.2cm}|p{6.2cm}|}
+\hline
+\textbf{Xác suất spam} & \textbf{Hành động} & \textbf{Lý do} \\
+\hline
+$\ge 0{,}9$ & Chặn hoặc chuyển vào hộp thư rác & Mô hình rất tự tin; ở ngưỡng 0,9 chỉ còn 1 FP trên tập kiểm tra. \\
+\hline
+$0{,}3$ -- $0{,}9$ & Gắn cảnh báo ``nghi là spam'' nhưng vẫn giao tin & Vùng ranh giới chứa 2/3 FP và 4/11 FN của E5 trên tập kiểm tra; không nên chặn thẳng. \\
+\hline
+$< 0{,}3$ & Giao bình thường & Rủi ro chặn nhầm tin quan trọng lớn hơn lợi ích; 7/11 FN nằm ở đây và cần biện pháp khác (Mục~6.2). \\
+\hline
+\end{tabular}
+\Nguon{Nhóm đề xuất dựa trên Bảng~\ref{tab:nguong}; các mức cụ thể cần được hiệu chỉnh trên tập validation}
+\end{table}
+
+Các mốc 0,3 và 0,9 được rút ra từ quan sát trên tập kiểm tra nên chỉ là \textbf{điểm khởi đầu}; khi triển khai cần chọn bằng validation theo chi phí kinh doanh thực tế (ví dụ chi phí một tin OTP bị chặn so với chi phí một khiếu nại spam).
+
+\subsection{Giám sát và vòng đời mô hình}
+
+\begin{itemize}
+    \item \textbf{Spam thay đổi theo thời gian} (concept drift): cần giám sát tỉ lệ spam và phân bố xác suất, huấn luyện lại định kỳ với dữ liệu mới gán nhãn.
+    \item \textbf{Vòng lặp phản hồi}: cho phép người dùng báo ``đây là spam''/``không phải spam'' và đưa vào dữ liệu huấn luyện; đặc biệt ưu tiên các tin FP vì chi phí cao.
+    \item \textbf{Quy tắc bổ sung}: kết hợp danh sách chặn/cho phép (số điện thoại, đầu số đã biết) với mô hình để bù các lỗi ``chắc chắn sai'' mà mô hình văn bản không thể bắt (Mục~6.2).
+    \item \textbf{Quyền riêng tư}: nội dung SMS là dữ liệu nhạy cảm; nên xử lý trên thiết bị hoặc ẩn danh hóa trước khi lưu để huấn luyện.
+\end{itemize}
+
+\subsection{Phạm vi áp dụng và các giới hạn cần nêu rõ}
+
+Mô hình hiện tại \textbf{chỉ phù hợp với tin nhắn tiếng Anh} và đã được đánh giá trên một corpus cũ có thiên lệch nguồn. Không nên triển khai trực tiếp cho tin nhắn tiếng Việt hoặc cho spam hiện đại (liên kết rút gọn, giả mạo ngân hàng, mã xác thực) mà không huấn luyện lại và đánh giá trên dữ liệu đại diện. Con số F1 94\% trong báo cáo \textit{mô tả corpus này}, không phải tiên đoán chất lượng ngoài thực tế.

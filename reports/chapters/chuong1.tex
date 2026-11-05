@@ -1,0 +1,109 @@
+\chapter{GIỚI THIỆU BÀI TOÁN VÀ DỮ LIỆU}
+
+\section{Bối cảnh và ý nghĩa thực tiễn}
+
+Tin nhắn SMS vẫn là kênh liên lạc có độ phủ rộng nhất, không phụ thuộc vào kết nối Internet hay một ứng dụng cụ thể. Chính vì vậy SMS là mục tiêu thường xuyên của quảng cáo trái phép, lừa đảo trúng thưởng, dụ dỗ đăng ký dịch vụ tính cước và giả mạo thương hiệu. Một bộ lọc spam hiệu quả mang lại lợi ích ở ba phía:
+
+\begin{itemize}
+    \item \textbf{Người dùng}: giảm phiền toái và giảm rủi ro bị lừa đảo.
+    \item \textbf{Nhà mạng và nền tảng nhắn tin}: bảo vệ uy tín dịch vụ, giảm chi phí khiếu nại.
+    \item \textbf{Xã hội}: hạn chế các chiến dịch lừa đảo quy mô lớn.
+\end{itemize}
+
+Từ góc độ học máy, đây là bài toán \textit{phân loại văn bản nhị phân} với hai đặc điểm đáng chú ý: (i) dữ liệu mất cân bằng lớp (spam chiếm tỉ lệ thấp), và (ii) hai loại lỗi có chi phí rất khác nhau. Chặn nhầm một tin hợp lệ (mã OTP, thông báo từ ngân hàng, tin của người thân) gây hậu quả nặng hơn nhiều so với để lọt một tin quảng cáo. Hai đặc điểm này quyết định cách chọn thước đo đánh giá trong suốt báo cáo.
+
+\section{Phát biểu bài toán}
+
+Cho một tin nhắn $d$ là chuỗi ký tự, cần học hàm
+\[
+f:\ d \mapsto \hat{y}\in\{0,1\},
+\]
+trong đó $\hat{y}=1$ là \textit{spam} và $\hat{y}=0$ là \textit{ham} (tin hợp lệ). Báo cáo quy ước \textbf{spam là lớp dương}, vì vậy Precision, Recall và F1 được tính cho lớp spam; đây là lựa chọn bắt buộc để các thước đo có ý nghĩa nghiệp vụ trên dữ liệu mất cân bằng.
+
+Bài toán được giải theo hướng học có giám sát cổ điển: biểu diễn văn bản thành vector đặc trưng thưa (Bag-of-Words hoặc TF-IDF), sau đó huấn luyện bộ phân loại. Phạm vi của báo cáo \textit{không} bao gồm các mô hình mạng nơ-ron sâu hay mô hình ngôn ngữ lớn; các hướng đó chỉ được thảo luận ở phần hướng phát triển.
+
+\section{Bộ dữ liệu SMS Spam Collection}
+
+\subsection{Nguồn và thành phần}
+
+Báo cáo sử dụng đúng bộ dữ liệu giảng viên chỉ định: \textit{SMS Spam Collection v.1} do Almeida, Gómez Hidalgo và Yamakami công bố, được phân phối qua kho dữ liệu UCI Machine Learning Repository \cite{almeida2011}\cite{uci_sms}. Bộ dữ liệu gồm 5\,574 tin nhắn tiếng Anh, mỗi tin có một nhãn \textit{ham} hoặc \textit{spam}, lưu ở dạng tệp văn bản phân tách bằng ký tự tab (\texttt{nhãn<TAB>nội dung}), không có dòng tiêu đề.
+
+Theo tài liệu đi kèm bộ dữ liệu, corpus được ghép từ bốn nguồn khác nhau (Bảng~\ref{tab:nguon-du-lieu}).
+
+\begin{table}[H]
+\centering
+\caption{Thành phần nguồn của bộ dữ liệu SMS Spam Collection}
+\label{tab:nguon-du-lieu}
+\begin{tabular}{|p{6.2cm}|c|c|p{3.2cm}|}
+\hline
+\textbf{Nguồn} & \textbf{Ham} & \textbf{Spam} & \textbf{Ghi chú} \\
+\hline
+Diễn đàn Grumbletext (Vương quốc Anh) & -- & 425 & Trích thủ công từ các bài đăng khiếu nại \\
+\hline
+Luận án tiến sĩ của C. Tagg (2009) & 450 & -- & SMS đời thường \\
+\hline
+NUS SMS Corpus (Singapore) & 3\,375 & -- & Phần lớn từ sinh viên \\
+\hline
+SMS Spam Corpus v.0.1 Big & 1\,002 & 322 & Corpus trước đó của nhóm tác giả \\
+\hline
+\textbf{Tổng} & \textbf{4\,827} & \textbf{747} & \textbf{5\,574 tin} \\
+\hline
+\end{tabular}
+\Nguon{Tài liệu \texttt{readme} đi kèm bộ dữ liệu; nhóm tổng hợp}
+\end{table}
+
+\subsection{Định dạng và đặc điểm ngôn ngữ}
+
+Các tin nhắn chứa nhiều đặc trưng của văn bản SMS thực tế: viết tắt (\textit{u}, \textit{ur}, \textit{2day}, \textit{4}), lỗi chính tả, biểu tượng cảm xúc, ký tự đặc biệt (\textit{£}, \textit{\&lt;\#\&gt;}) và số điện thoại hoặc đầu số dịch vụ. Đây là lý do việc làm sạch văn bản cần được thiết kế thận trọng thay vì xóa máy móc mọi ký tự không phải chữ cái (xem Mục~\ref{sec:tien-xu-ly}).
+
+\section{Giả định và giới hạn của dữ liệu}
+
+Nhóm chủ động nêu các giới hạn của bộ dữ liệu ngay từ đầu vì chúng ảnh hưởng trực tiếp tới mức độ tin cậy của mọi kết luận ở các chương sau.
+
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Chỉ có tiếng Anh.} Mô hình học trên từ vựng tiếng Anh, vì vậy không áp dụng được cho tin nhắn tiếng Việt nếu không huấn luyện lại bằng dữ liệu tiếng Việt.
+    \item \textbf{Dữ liệu cũ và nhỏ.} Corpus được thu thập chủ yếu trước năm 2012, quy mô khoảng năm nghìn tin. Hình thức spam hiện nay (liên kết rút gọn, giả mạo ngân hàng, mã QR) khác đáng kể.
+    \item \textbf{Ham và spam đến từ các nguồn khác nhau.} Phần lớn ham là tin của sinh viên Singapore, phần lớn spam đến từ khiếu nại của người dùng Anh. Mô hình có thể học phần nào các khác biệt về \textit{nguồn} (phương ngữ, định dạng) thay vì chỉ học khác biệt về \textit{bản chất spam}. Do đó con số kết quả chỉ mô tả corpus này, không chứng minh khả năng tổng quát hóa sang SMS hiện đại.
+    \item \textbf{Có tin trùng lặp.} Corpus chứa 414 tin có nội dung trùng với tin khác; cách xử lý được nêu ở Mục~\ref{sec:eda-trung-lap}.
+    \item \textbf{Nhãn được giả định là đúng.} Nhóm không kiểm định lại nhãn thủ công; nhãn có thể chứa nhiễu nhỏ.
+\end{enumerate}
+
+\section{Mục tiêu và đóng góp của nhóm}
+
+Mục tiêu kỹ thuật của bài tập lớn:
+
+\begin{enumerate}[label=(\arabic*)]
+    \item Xây dựng pipeline từ dữ liệu thô đến đánh giá và demo, tổ chức mã nguồn theo mô-đun để dễ mở rộng.
+    \item Thiết lập baseline và tối thiểu hai phương án thực nghiệm có ý nghĩa; so sánh BoW với TF-IDF, unigram với bigram, và ba thuật toán.
+    \item Chạy thí nghiệm đối chứng (ablation) cho các bước tiền xử lý để có bằng chứng định lượng cho từng quyết định.
+    \item Đánh giá đa chiều (Accuracy, Precision, Recall, F1 của lớp spam, ROC-AUC, ma trận nhầm lẫn), kèm kiểm tra rò rỉ dữ liệu và học thuộc.
+    \item Phân tích lỗi cụ thể và đề xuất cải tiến dựa trên các lỗi quan sát được.
+\end{enumerate}
+
+Các đóng góp chính của nhóm gồm: (i) một thư viện Python \texttt{spam\_filter} có cấu hình tập trung, 41 bài kiểm thử tự động và giao diện dòng lệnh; (ii) bộ thí nghiệm E0--E6 có bảng log tham số; (iii) bộ kiểm tra rò rỉ/học thuộc/baseline đơn giản; (iv) ứng dụng web demo bằng Streamlit.
+
+\section{Tiêu chí thành công}
+
+Do đặc thù nghiệp vụ, nhóm đặt tiêu chí thành công theo thứ tự ưu tiên như sau:
+
+\begin{table}[H]
+\centering
+\caption{Tiêu chí đánh giá thành công của hệ thống lọc spam}
+\label{tab:tieu-chi}
+\begin{tabular}{|c|p{3.6cm}|p{9cm}|}
+\hline
+\textbf{STT} & \textbf{Tiêu chí} & \textbf{Lý do} \\
+\hline
+1 & Precision của lớp spam cao & Chặn nhầm tin hợp lệ (FP) gây hậu quả nặng nhất. \\
+\hline
+2 & Recall của lớp spam cao & Bỏ lọt spam (FN) gây phiền toái, nhưng người dùng vẫn đọc được tin. \\
+\hline
+3 & F1 của lớp spam & Một con số tổng hợp để so sánh các phương án và chọn mô hình. \\
+\hline
+4 & Kết quả ổn định, không rò rỉ & Con số phải đáng tin: không do trùng dữ liệu, học thuộc hay may mắn khi chia. \\
+\hline
+\end{tabular}
+\Nguon{Nhóm xây dựng}
+\end{table}
+
+Accuracy \textit{không} được dùng làm tiêu chí chính. Lý do được phân tích định lượng ở Mục~\ref{sec:accuracy-lua-doi}.

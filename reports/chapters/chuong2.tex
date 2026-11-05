@@ -1,0 +1,90 @@
+\chapter{CƠ SỞ LÝ THUYẾT}
+
+Chương này trình bày các kiến thức nền tảng được sử dụng trong báo cáo (có thể xem thêm giáo trình tiếng Việt \cite{tiep2018}), với trọng tâm là những điểm giải thích \textit{vì sao} mỗi lựa chọn thiết kế ở các chương sau là hợp lý.
+
+\section{Biểu diễn văn bản dạng vector}
+
+Các thuật toán học máy làm việc với vector số, vì vậy văn bản cần được chuyển thành vector đặc trưng. Gọi $V$ là từ vựng (tập các token) xây dựng từ \textit{tập huấn luyện}; mỗi văn bản $d$ được biểu diễn bởi vector $\mathbf{x}\in\mathbb{R}^{|V|}$.
+
+\subsection{Bag-of-Words (BoW)}
+
+Trong mô hình túi từ, thành phần $x_w$ là số lần từ $w$ xuất hiện trong $d$, bỏ qua thứ tự từ. Ưu điểm là đơn giản, nhanh và kết hợp tự nhiên với Multinomial Naive Bayes. Nhược điểm là các từ rất phổ biến (\textit{to}, \textit{you}, \textit{the}) có trọng số lớn dù ít mang thông tin phân biệt.
+
+\subsection{TF-IDF}
+
+TF-IDF điều chỉnh tần suất thô bằng độ hiếm của từ trong toàn corpus. Dựa trên ý tưởng của Spärck Jones \cite{sparckjones1972} và với cài đặt mặc định của scikit-learn \cite{scikit-learn} (làm mượt IDF):
+\begin{equation}
+\mathrm{idf}(w)=\ln\frac{1+n}{1+\mathrm{df}(w)}+1,\qquad
+x_w=\mathrm{tf}(w,d)\cdot\mathrm{idf}(w),
+\end{equation}
+trong đó $n$ là số văn bản huấn luyện và $\mathrm{df}(w)$ là số văn bản chứa $w$. Sau đó vector được chuẩn hóa theo chuẩn $L_2$, nên độ dài tin nhắn ít ảnh hưởng đến so sánh. Từ xuất hiện ở nhiều văn bản có IDF thấp, từ hiếm nhưng đặc trưng (\textit{prize}, \textit{claim}) có IDF cao.
+
+\subsection{N-gram và các tham số từ vựng}
+
+\textit{N-gram} là chuỗi $n$ token liên tiếp. Unigram $(1,1)$ chỉ xét từ đơn; \textit{bigram} $(1,2)$ bổ sung cụm hai từ như \textit{``to claim''}, \textit{``have won''}, \textit{``call now''}, giữ lại một phần thông tin ngữ cảnh mà BoW bỏ mất. Cái giá là từ vựng tăng mạnh và vector thưa hơn. Hai tham số kiểm soát kích thước từ vựng:
+\begin{itemize}
+    \item \texttt{min\_df}: bỏ các n-gram xuất hiện trong ít hơn một ngưỡng văn bản, giảm nhiễu và chi phí tính toán;
+    \item \texttt{max\_df}: bỏ các n-gram xuất hiện trong quá tỉ lệ văn bản cho trước (gần như từ dừng).
+\end{itemize}
+
+\section{Các thuật toán phân loại}
+
+\subsection{Multinomial Naive Bayes}
+
+Mô hình sự kiện đa thức cho phân loại văn bản được McCallum và Nigam \cite{mccallum1998} so sánh chi tiết với mô hình Bernoulli, và được trình bày hệ thống trong giáo trình của Manning và cộng sự \cite{manning2008}; Rennie và cộng sự \cite{rennie2003} phân tích các giả định yếu của nó và các hiệu chỉnh khi dùng với TF-IDF.
+
+Theo định lý Bayes, xác suất hậu nghiệm của lớp $c$ cho văn bản $d$ là $P(c\mid d)\propto P(c)P(d\mid c)$. Giả định ``ngây thơ'' coi các từ độc lập có điều kiện khi biết lớp:
+\begin{equation}
+P(c\mid d)\ \propto\ P(c)\prod_{w\in V}P(w\mid c)^{x_w}.
+\end{equation}
+Với làm mượt Laplace/Lidstone tham số $\alpha$:
+\begin{equation}
+P(w\mid c)=\frac{N_{wc}+\alpha}{N_c+\alpha|V|},
+\end{equation}
+trong đó $N_{wc}$ là tổng giá trị đặc trưng của từ $w$ trên các văn bản lớp $c$ và $N_c=\sum_{w}N_{wc}$. Thực tế dự đoán được tính trong không gian logarit để tránh tràn số dưới:
+\begin{equation}
+\hat{c}=\arg\max_c\Big[\ln P(c)+\sum_{w}x_w\ln P(w\mid c)\Big].
+\end{equation}
+
+\textbf{Vì sao hợp với văn bản?} (i) Vector văn bản có hàng chục nghìn chiều nhưng rất thưa, trong khi số tham số cần ước lượng của NB chỉ tỉ lệ với $|V|$ nên ít bị quá khớp trên dữ liệu nhỏ; (ii) huấn luyện chỉ là đếm, rất nhanh; (iii) mô hình \textit{khả diễn giải} vì $\ln P(w\mid\mathrm{spam})-\ln P(w\mid\mathrm{ham})$ cho biết từ nào đẩy tin về phía spam. Giả định độc lập rõ ràng không đúng với ngôn ngữ, nhưng với mục đích \textit{phân loại} (chỉ cần xếp hạng đúng lớp), sai lệch này thường ít gây hại; còn xác suất đầu ra thường kém hiệu chuẩn (quá tự tin), nên ngưỡng quyết định cần được hiệu chỉnh thay vì mặc định 0,5.
+
+\textbf{Vai trò của $\alpha$.} $\alpha$ nhỏ làm mô hình tin vào từng từ hiếm hơn (phương sai cao), $\alpha$ lớn kéo mọi xác suất về gần nhau (thiên lệch cao). Với từ vựng bigram lớn, $\alpha$ lớn làm loãng tín hiệu của các cụm hiếm nhưng quyết định; điều này được kiểm chứng ở Mục~\ref{sec:nhay-tham-so}.
+
+\subsection{K láng giềng gần nhất (K-NN)}
+
+K-NN dự đoán lớp của $d$ bằng đa số nhãn của $k$ văn bản huấn luyện gần nhất. Với vector TF-IDF đã chuẩn hóa $L_2$, khoảng cách cosine
+\begin{equation}
+d_{\cos}(\mathbf{x},\mathbf{z})=1-\frac{\mathbf{x}\cdot\mathbf{z}}{\lVert\mathbf{x}\rVert\,\lVert\mathbf{z}\rVert}
+\end{equation}
+là lựa chọn chuẩn cho văn bản vì không phụ thuộc độ dài. K-NN không có giai đoạn huấn luyện thực sự (``học lười''), chi phí dự đoán tỉ lệ với kích thước tập huấn luyện, và chịu ảnh hưởng của ``lời nguyền số chiều'': trong không gian hàng chục nghìn chiều, khoảng cách giữa các điểm có xu hướng đồng đều, làm mất khả năng phân biệt.
+
+\subsection{Cây quyết định (Decision Tree)}
+
+Cây quyết định chia đệ quy không gian đặc trưng bằng các điều kiện dạng $x_w\le\tau$, tại mỗi nút chọn phép chia làm giảm độ tạp Gini nhiều nhất:
+\begin{equation}
+G=1-\sum_{k}p_k^2 .
+\end{equation}
+Cây có tính diễn giải cao nhưng dễ quá khớp; các siêu tham số \texttt{max\_depth} và \texttt{min\_samples\_leaf} dùng để giới hạn độ phức tạp. Trên vector văn bản thưa nhiều chiều, một cây đơn thường chỉ dựa vào vài từ khóa nên khó đạt Recall cao.
+
+\section{Thước đo đánh giá}
+
+Với spam là lớp dương, ma trận nhầm lẫn gồm TP (spam bị chặn đúng), FP (ham bị chặn nhầm), FN (spam bị bỏ lọt) và TN (ham được giữ lại đúng). Khi đó:
+\begin{align}
+\mathrm{Accuracy}&=\frac{TP+TN}{TP+TN+FP+FN},\\
+\mathrm{Precision}&=\frac{TP}{TP+FP},\qquad
+\mathrm{Recall}=\frac{TP}{TP+FN},\\
+F_1&=\frac{2\cdot\mathrm{Precision}\cdot\mathrm{Recall}}{\mathrm{Precision}+\mathrm{Recall}}.
+\end{align}
+
+\begin{itemize}
+    \item \textbf{Precision} đo trong số tin bị chặn thì bao nhiêu thực sự là spam: nó phản ánh rủi ro \textit{chặn nhầm}.
+    \item \textbf{Recall} đo trong số spam thật thì bắt được bao nhiêu: nó phản ánh rủi ro \textit{bỏ lọt}.
+    \item \textbf{F1} là trung bình điều hòa của hai đại lượng trên, bị kéo xuống nếu một trong hai thấp.
+    \item \textbf{ROC-AUC} là xác suất mô hình xếp một spam ngẫu nhiên cao điểm hơn một ham ngẫu nhiên; thước đo này không phụ thuộc ngưỡng quyết định.
+\end{itemize}
+
+\section{Kiểm định chéo và rò rỉ dữ liệu}
+
+\textbf{Kiểm định chéo phân tầng $K$-fold} chia tập huấn luyện thành $K$ phần giữ nguyên tỉ lệ lớp; lần lượt dùng một phần để kiểm định và $K-1$ phần để huấn luyện, rồi lấy trung bình. Báo cáo dùng $K=5$ và dùng \textbf{F1 của lớp spam qua CV trên tập huấn luyện} để \textit{chọn mô hình}, nhờ vậy tập kiểm tra (test) chỉ được dùng để báo cáo cuối cùng chứ không tham gia vào việc chọn.
+
+\textbf{Rò rỉ dữ liệu (data leakage)} xảy ra khi thông tin từ tập kiểm tra ``lọt'' vào quá trình huấn luyện, làm kết quả đẹp một cách giả tạo. Hai nguồn rò rỉ thường gặp với văn bản là: (i) \textit{fit vectorizer trên toàn bộ dữ liệu} (từ vựng và IDF bị tính cả từ tập test), và (ii) \textit{tin trùng lặp nằm ở cả hai tập}. Cách phòng ngừa của nhóm: bọc toàn bộ chuỗi làm sạch, vector hóa và mô hình trong một \texttt{Pipeline} của scikit-learn, nhờ đó mọi bước học từ dữ liệu chỉ được \texttt{fit} trên phần huấn luyện (kể cả trong từng fold của CV), và bỏ trùng lặp \textit{trước} khi chia.
