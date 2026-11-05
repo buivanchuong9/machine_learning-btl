@@ -1,0 +1,152 @@
+\chapter{PHÂN TÍCH LỖI VÀ DIỄN GIẢI MÔ HÌNH}
+
+Chương này phân tích 14 tin bị phân loại sai của mô hình E5 trên tập kiểm tra (3 FP và 11 FN) và xem mô hình đã ``học'' những gì. Với mỗi lỗi, nhóm tính đóng góp của từng đặc trưng vào quyết định, tức tích giữa giá trị TF-IDF của đặc trưng và hiệu số log xác suất $\ln P(w\mid\text{spam})-\ln P(w\mid\text{ham})$ của Naive Bayes. Đóng góp dương đẩy tin về phía spam, đóng góp âm đẩy về phía ham.
+
+\section{Phân tích các tin ham bị chặn nhầm (FP)}
+
+Mô hình chặn nhầm \textbf{3 tin hợp lệ} (Bảng~\ref{tab:fp}); đây là loại lỗi nghiêm trọng hơn theo tiêu chí ở Mục~1.6.
+
+\begin{table}[H]
+\centering
+\caption{Các tin ham bị dự đoán nhầm là spam (FP) của E5}
+\label{tab:fp}
+\begin{tabular}{|p{4.8cm}|c|p{6.6cm}|}
+\hline
+\textbf{Nội dung tin} & \textbf{$P(\text{spam})$} & \textbf{Đặc trưng đẩy về spam} \\
+\hline
+\textit{``Nokia phone is lovly..''} & 0,922 & \textit{nokia}, \textit{nokia phone} (đóng góp lớn nhất). \\
+\hline
+\textit{``K:)eng rocking in ashes:)''} & 0,541 & \textit{eng} (chỉ có 2 đặc trưng trong tin). \\
+\hline
+\textit{``Unlimited texts. Limited minutes.''} & 0,539 & \textit{unlimited}, \textit{texts}. \\
+\hline
+\end{tabular}
+\Nguon{Nhóm phân tích từ \texttt{outputs/results/errors\_E5.csv}}
+\end{table}
+
+Ba nhận xét:
+
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Cả ba tin đều rất ngắn} (22--33 ký tự, chỉ 2--5 đặc trưng). Với tin quá ngắn, một từ duy nhất có thể chi phối cả quyết định; tin thứ hai bị chặn gần như chỉ vì từ \textit{eng}.
+    \item \textbf{Hiện tượng ``từ khóa gây hiểu lầm''.} \textit{Nokia} nằm trong nhóm từ đặc trưng spam mạnh nhất (Bảng~\ref{tab:top-words}) vì trong dữ liệu có nhiều spam quảng cáo điện thoại Nokia. Mô hình không biết một lời nhận xét về chiếc điện thoại thì vô hại; nó chỉ thấy từ khóa.
+    \item \textbf{Hai trong ba FP chỉ ở sát ranh giới} (xác suất 0,54). Khi tăng ngưỡng lên 0,6 chúng được cứu (Bảng~\ref{tab:nguong}: FP giảm từ 3 xuống 1), chỉ còn tin \textit{``Nokia phone is lovly..''} với xác suất 0,92 là lỗi ``tự tin''.
+\end{enumerate}
+
+\section{Phân tích các tin spam bị bỏ lọt (FN)}
+
+Mô hình bỏ lọt \textbf{11 tin spam}. Nhóm phân loại chúng theo kiểu ngôn ngữ (Bảng~\ref{tab:fn}). Một số tin có nội dung người lớn nên chỉ được mô tả khái quát.
+
+\begin{table}[H]
+\centering
+\caption{Phân nhóm các tin spam bị bỏ lọt (FN) của E5}
+\label{tab:fn}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|c|>{\raggedright\arraybackslash}p{5.8cm}|>{\raggedright\arraybackslash}p{3cm}|}
+\hline
+\textbf{Nhóm} & \textbf{Số tin} & \textbf{Đặc điểm và ví dụ rút gọn} & \textbf{$P(\text{spam})$} \\
+\hline
+Mạo danh tin nhắn cá nhân (lừa gọi lại / bắt chuyện) & 3 & \textit{``Sorry I missed your call let's talk when you have the time. I'm on 0709...''}; tin hỏi thăm về trang web cá nhân; tin ``\textit{dating:...}'' như lời kể chuyện. & 0,003; 0,075; 0,006 \\
+\hline
+Tin quảng cáo dịch vụ người lớn, văn phong thân mật & 4 & Dùng ngôn ngữ hội thoại (\textit{babe}, \textit{me}, \textit{u}), đuôi chỉ dẫn \textit{txt}/\textit{STOP}, mức cước (\textit{150ppmsg}). & 0,004; 0,012; 0,363; 0,378 \\
+\hline
+Dịch vụ thuê bao, thông báo thanh toán & 2 & Dịch vụ tử vi/chiêm tinh (\textit{Reply ANS}, \textit{Reply END}); thông báo ``bị tính 35p'' mua clip video. & 0,427; 0,448 \\
+\hline
+Quảng cáo gắn tên miền & 2 & Tin ``\textit{Cashbin.co.uk ... cash give away}'' (dài, văn phong khuyến mãi nhẹ); tin giới thiệu dịch vụ gửi tin ẩn danh \textit{thesmszone.com}. & 0,286; 0,037 \\
+\hline
+\end{tabular}
+\Nguon{Nhóm phân tích từ \texttt{outputs/results/errors\_E5.csv}}
+\end{table}
+
+Phân bố xác suất của các FN cho thấy hai kiểu lỗi khác hẳn nhau về bản chất:
+
+\begin{itemize}
+    \item \textbf{5/11 lỗi nằm ở vùng ranh giới} ($P=0{,}29$--$0{,}45$): mô hình ``nghi ngờ'' nhưng chưa đủ. Đây là các lỗi có thể giảm bằng cách hạ ngưỡng. Quả thật ở ngưỡng 0,3 tổng FN giảm từ 11 xuống 7 (Bảng~\ref{tab:nguong}) nhưng phải trả giá bằng FP tăng từ 3 lên 6.
+    \item \textbf{6/11 lỗi là ``chắc chắn sai''} ($P\le0{,}075$): các spam này được viết như tin nhắn cá nhân bình thường, hầu như không chứa từ khóa khuyến mãi điển hình. Với mô hình dựa trên túi từ, chúng \textit{không thể phân biệt được} khỏi ham, vì dấu hiệu duy nhất là ý đồ (nhờ gọi lại một số lạ, dẫn tới trang web), thuộc về ngữ nghĩa và ngữ cảnh. Hạ ngưỡng không giúp ích; cần đặc trưng khác hoặc mô hình hiểu ngữ nghĩa.
+\end{itemize}
+
+Ví dụ điển hình: tin \textit{``Sorry I missed your call let's talk when you have the time. I'm on 07090201529''} có các đặc trưng đẩy về ham mạnh (\textit{sorry}, \textit{let}, \textit{have the}) lấn át tín hiệu số điện thoại (\texttt{numtoken}), dẫn tới $P(\text{spam})=0{,}003$. Việc token hóa số điện thoại giúp mô hình nhận ra \textit{``có một số''}, nhưng một số điện thoại trong ham (ví dụ ``gọi tôi theo số...'') cũng xuất hiện, nên tín hiệu này không đủ độc lập.
+
+\section{Mô hình đã học điều gì?}
+
+Vì Naive Bayes khả diễn giải, nhóm xếp hạng các n-gram theo hiệu số $\ln P(w\mid\text{spam})-\ln P(w\mid\text{ham})$ trong E5 (Bảng~\ref{tab:top-words}).
+
+\begin{table}[H]
+\centering
+\caption{Các n-gram có điểm phân biệt cao nhất cho từng lớp (E5)}
+\label{tab:top-words}
+\small
+\begin{tabular}{|c|p{3.6cm}|c|p{3.2cm}|c|}
+\hline
+\textbf{Hạng} & \textbf{Đặc trưng spam} & \textbf{Điểm} & \textbf{Đặc trưng ham} & \textbf{Điểm} \\
+\hline
+1 & \textit{claim} & 5,84 & \textit{gt} & $-4,49$ \\
+\hline
+2 & \textit{prize} & 5,72 & \textit{lt} & $-4,49$ \\
+\hline
+3 & \textit{numtoken now} & 5,65 & \textit{lt gt} & $-4,40$ \\
+\hline
+4 & \textit{nokia} & 5,38 & \textit{lor} & $-4,32$ \\
+\hline
+5 & \textit{numtoken moneytoken} & 5,35 & \textit{da} & $-4,28$ \\
+\hline
+6 & \textit{box numtoken} & 5,26 & \textit{he} & $-4,26$ \\
+\hline
+7 & \textit{your mobile} & 5,26 & \textit{she} & $-3,91$ \\
+\hline
+8 & \textit{have won} & 5,24 & \textit{later} & $-3,86$ \\
+\hline
+9 & \textit{moneytoken cash} & 5,19 & \textit{lol} & $-3,76$ \\
+\hline
+10 & \textit{to claim} & 5,18 & \textit{anything} & $-3,72$ \\
+\hline
+\end{tabular}
+\Nguon{Nhóm tính từ \texttt{outputs/results/top\_words\_E5.csv}}
+\end{table}
+
+Có ba quan sát có giá trị:
+
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Phía spam đúng với trực giác} và xác nhận giả thuyết H1: kêu gọi hành động (\textit{claim}, \textit{to claim}), phần thưởng (\textit{prize}, \textit{have won}), và \textit{các token cấu trúc} do tiền xử lý tạo ra (\textit{numtoken now}, \textit{numtoken moneytoken}, \textit{moneytoken cash}, \textit{box numtoken}). Bốn trên mười đặc trưng hàng đầu là cụm có token hóa; điều này giải thích tại sao token hóa giúp ích (Mục~\ref{sec:nhay-tham-so}): nó biến các giá trị duy nhất thành các đặc trưng lặp lại và có tính phân biệt.
+    \item \textbf{Phía ham chứa ``dấu vân tay'' của nguồn dữ liệu.} \textit{gt}, \textit{lt}, \textit{lt gt} là phần còn lại của chuỗi thực thể HTML \texttt{\&lt;\#\&gt;} trong corpus gốc, hoàn toàn không liên quan tới ý nghĩa; \textit{lor} và \textit{da} là tiểu từ đặc trưng của tiếng Anh Singapore/Nam Á trong tin nhắn của sinh viên. Đây là \textbf{bằng chứng trực tiếp cho thiên lệch nguồn} đã cảnh báo ở Mục~1.4: một phần ``hiểu biết'' của mô hình là nhận ra phương ngữ và định dạng thay vì bản chất spam. Mô hình sẽ dễ sai khi gặp ham viết bằng văn phong khác hoặc spam kiểu mới.
+    \item \textbf{Từ trung tính vẫn có trọng số.} \textit{he}, \textit{she}, \textit{later}, \textit{anything} nghiêng mạnh về ham, nhất quán với ý rằng tin cá nhân nhắc đến người thứ ba và thời gian. Đây cũng là lý do một số spam viết như tin cá nhân (nhóm FN thứ nhất) rất khó bị phát hiện.
+\end{enumerate}
+
+\section{Liên hệ với giả định của mô hình và đặc điểm dữ liệu}
+
+\begin{itemize}
+    \item \textbf{Giả định độc lập có điều kiện.} Các cụm như \textit{to claim}, \textit{have won} được đếm \textit{vừa} như hai từ đơn \textit{vừa} như một bigram, nên cùng một bằng chứng bị tính trùng; điều này làm xác suất đầu ra quá tự tin (nhiều FP/FN có xác suất cực đoan như 0,003 hoặc 0,922) và là lý do không nên diễn giải $P(\text{spam})$ như xác suất đã hiệu chuẩn.
+    \item \textbf{Mất cân bằng lớp.} Xác suất tiên nghiệm spam chỉ 12,45\% làm mô hình thiên về dự đoán ham khi bằng chứng không rõ; điều này góp phần vào nhóm FN ranh giới. Có thể bù bằng hạ ngưỡng hoặc điều chỉnh tiên nghiệm.
+    \item \textbf{Tin ngắn.} Cả ba FP đều rất ngắn; với ít đặc trưng, một từ hiếm có thể chi phối. Tin ngắn là vùng rủi ro đặc biệt của mô hình túi từ.
+    \item \textbf{Dữ liệu trùng lặp.} Nếu giữ nguyên 414 tin trùng, mô hình sẽ đếm một số mẫu spam nhiều lần và các phép đánh giá có thể bị làm đẹp; việc loại trùng trước khi chia là cần thiết để lỗi quan sát được có ý nghĩa.
+\end{itemize}
+
+\section{Đề xuất cải thiện dựa trên bằng chứng}
+
+Các đề xuất dưới đây được gắn trực tiếp với lỗi quan sát được.
+
+\begin{table}[H]
+\centering
+\caption{Đề xuất cải thiện và căn cứ}
+\label{tab:de-xuat}
+\small
+\begin{tabular}{|p{3.7cm}|p{5.3cm}|p{5cm}|}
+\hline
+\textbf{Đề xuất} & \textbf{Căn cứ từ thực nghiệm} & \textbf{Kỳ vọng và rủi ro} \\
+\hline
+Chọn ngưỡng bằng CV, ưu tiên Precision & 2/3 FP chỉ ở ranh giới; 5/11 FN ở ranh giới; ngưỡng 0,6 giảm FP còn 1 (Bảng~\ref{tab:nguong}). & Giảm chặn nhầm; đánh đổi Recall. Phải chọn trên validation. \\
+\hline
+Hiệu chuẩn xác suất (Platt/isotonic) hoặc dùng \texttt{class\_weight}/prior & Xác suất đầu ra cực đoan; lỗi tự tin 0,922 và 0,003. & Ngưỡng có ý nghĩa xác suất thật. \\
+\hline
+Đặc trưng thủ công: độ dài, số chữ số, tỉ lệ chữ hoa, có URL & Baseline độ dài + chữ số đã có F1 0,886 (Mục~\ref{sec:sanity}); nhiều tín hiệu nằm ngoài từ vựng. & Bổ sung thông tin độc lập với từ; cần mô hình kết hợp (ví dụ hồi quy logistic). \\
+\hline
+N-gram ký tự và chuẩn hóa viết tắt SMS & Nhiều viết tắt/viết sai (\textit{u}, \textit{2day}, \textit{lovly}); \textit{eng} gây FP. & Giảm từ ngoài từ vựng; tăng chi phí. \\
+\hline
+Thêm dữ liệu spam hiện đại và đa nguồn & Thiên lệch nguồn (\textit{lor}, \textit{gt}); đường cong học đi ngang. & Cải thiện khái quát hóa; cần gán nhãn. \\
+\hline
+Biểu diễn ngữ nghĩa (sentence embedding) & 6/11 FN là spam ``giả cá nhân''. & Có thể bắt ý đồ; tốn tài nguyên, giảm khả năng giải thích. \\
+\hline
+\end{tabular}
+\Nguon{Nhóm tổng hợp}
+\end{table}
+
+Các đề xuất này \textit{chưa được kiểm chứng bằng thực nghiệm} trong khuôn khổ bài tập lớn; chúng là hướng phát triển có căn cứ, không phải kết quả đã đạt.

@@ -1,0 +1,15 @@
+\UnnumberedChapter{LỜI MỞ ĐẦU}
+
+Tin nhắn rác (spam) là một trong những vấn đề dai dẳng nhất của các kênh liên lạc số. Ngoài việc gây phiền toái, spam còn là phương tiện phát tán quảng cáo trái phép, lừa đảo trúng thưởng và thu thập thông tin cá nhân. Việc lọc spam tự động vì vậy là một bài toán phân loại văn bản kinh điển, đồng thời là bài toán thực tế có yêu cầu nghiệp vụ rõ ràng: \textit{chặn được nhiều spam nhưng hầu như không được chặn nhầm tin hợp lệ}.
+
+Báo cáo này trình bày toàn bộ quy trình học máy giám sát cho bài toán phân loại tin nhắn SMS thành \textit{spam} và \textit{ham} (tin hợp lệ) trên bộ dữ liệu SMS Spam Collection do UCI công bố. Quy trình đi từ dữ liệu thô đến sản phẩm demo, gồm: phân tích khám phá dữ liệu, tiền xử lý văn bản, biểu diễn đặc trưng bằng Bag-of-Words và TF-IDF, huấn luyện ba thuật toán (Multinomial Naive Bayes, K-NN, Decision Tree), đánh giá bằng các thước đo phù hợp với dữ liệu mất cân bằng, phân tích lỗi và đề xuất ứng dụng.
+
+\textbf{Mục tiêu của báo cáo:}
+\begin{itemize}
+    \item Xây dựng pipeline phân loại spam hoàn chỉnh, có baseline, có thí nghiệm đối chứng (ablation), \textit{không rò rỉ dữ liệu} và \textit{tái lập được}.
+    \item Chứng minh bằng số liệu tác động của từng quyết định thiết kế (BoW so với TF-IDF, unigram so với bigram, thuật toán, tiền xử lý) lên chất lượng mô hình.
+    \item Đánh giá mô hình một cách trung thực: nêu rõ phương sai do cách chia dữ liệu, kết quả kiểm tra rò rỉ/học thuộc và các hạn chế của dữ liệu.
+    \item Diễn giải lỗi và đưa ra khuyến nghị ứng dụng dựa trên bằng chứng.
+\end{itemize}
+
+\textbf{Bố cục báo cáo} gồm bảy chương: Chương~1 giới thiệu bài toán và dữ liệu; Chương~2 trình bày cơ sở lý thuyết; Chương~3 phân tích khám phá dữ liệu, tiền xử lý và biểu diễn đặc trưng; Chương~4 mô tả thiết kế pipeline và thiết lập thí nghiệm; Chương~5 trình bày kết quả và so sánh; Chương~6 phân tích lỗi và diễn giải mô hình; Chương~7 đề xuất ứng dụng thực tế và mô tả sản phẩm demo. Phần Kết luận tổng kết, nêu hạn chế và hướng phát triển. Các phụ lục cung cấp thông tin tái lập, phân công công việc và khai báo sử dụng công cụ AI.

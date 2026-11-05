@@ -1,0 +1,159 @@
+\chapter{THIẾT KẾ PIPELINE VÀ THIẾT LẬP THÍ NGHIỆM}
+
+\section{Kiến trúc tổng thể}
+
+Toàn bộ quy trình được cài đặt thành thư viện Python \texttt{spam\_filter} và dùng chung cho dòng lệnh, notebook và ứng dụng web. Luồng xử lý được thể hiện ở Sơ đồ~\ref{fig:so-do-pipeline}.
+
+\begin{sodo}[H]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=0.55cm and 0.7cm,
+        box/.style={draw, rounded corners=2pt, align=center, minimum height=1.05cm, minimum width=2.3cm, font=\small, fill=gray!8},
+        data/.style={box, fill=blue!8},
+        keep/.style={box, fill=green!10},
+        arr/.style={-{Latex[length=2mm]}, thick}
+    ]
+        \node[data] (raw) {Dữ liệu thô\\5\,574 tin};
+        \node[box, right=of raw] (dedup) {Loại trùng\\$\to$ 5\,160 tin};
+        \node[box, right=of dedup] (split) {Chia 80/20\\phân tầng, seed 42};
+        \node[keep, below=1.1cm of split, xshift=-2.2cm] (test) {Tập kiểm tra\\1\,032 tin};
+        \node[box, below=1.1cm of split, xshift=2.2cm] (train) {Tập huấn luyện\\4\,128 tin};
+        \node[box, right=1.6cm of train, minimum width=2.8cm] (pipe) {\textbf{Pipeline}\\Làm sạch $\to$ Vector hóa\\$\to$ Mô hình};
+        \node[box, below=0.9cm of pipe] (cv) {CV 5-fold\\(F1 lớp spam)};
+        \node[box, below=0.9cm of train] (select) {Chọn mô hình\\theo CV F1};
+        \node[keep, below=0.9cm of test] (eval) {Đánh giá cuối\\Acc/P/R/F1/AUC};
+        \node[box, left=0.7cm of eval] (err) {Phân tích lỗi\\và kiểm tra rò rỉ};
+
+        \draw[arr] (raw) -- (dedup);
+        \draw[arr] (dedup) -- (split);
+        \draw[arr] (split) -- (test);
+        \draw[arr] (split) -- (train);
+        \draw[arr] (train) -- (pipe);
+        \draw[arr] (pipe) -- (cv);
+        \draw[arr] (cv) -- (select);
+        \draw[arr] (select) -| (eval);
+        \draw[arr, dashed] (test) -- (eval);
+        \draw[arr] (eval) -- (err);
+    \end{tikzpicture}}
+    \SodoCaption{Luồng xử lý của pipeline phân loại spam (tập kiểm tra, màu xanh lá, chỉ dùng ở bước đánh giá cuối)}{Nhóm xây dựng}
+    \label{fig:so-do-pipeline}
+\end{sodo}
+
+\textbf{Điểm then chốt về chống rò rỉ.} Ba bước ``làm sạch, vector hóa, mô hình'' được ghép thành một đối tượng \texttt{Pipeline}. Khi gọi \texttt{fit} trên tập huấn luyện (hoặc trên $K-1$ fold trong CV), từ vựng và trọng số IDF chỉ được tính từ phần dữ liệu đó; khi dự đoán trên dữ liệu mới, vector hóa chỉ \textit{áp dụng} (\texttt{transform}) mà không học lại. Nếu vectorizer bị \texttt{fit} trên toàn bộ dữ liệu trước khi chia, từ vựng và IDF của tập test sẽ ``lọt'' vào mô hình, và kết quả sẽ lạc quan hơn thực tế.
+
+\section{Tổ chức mã nguồn}
+
+\begin{table}[H]
+\centering
+\caption{Các mô-đun của thư viện \texttt{spam\_filter}}
+\label{tab:modules}
+\begin{tabular}{|p{3.6cm}|p{10.4cm}|}
+\hline
+\textbf{Mô-đun} & \textbf{Trách nhiệm} \\
+\hline
+\texttt{config.py} & Đường dẫn, tên cột, \texttt{random\_state}, tỉ lệ chia, số fold; \textit{nơi duy nhất cần sửa khi đổi dữ liệu}. \\
+\hline
+\texttt{data.py} & Đọc dữ liệu, chuẩn hóa nhãn, loại trùng, chia train/test có phân tầng. \\
+\hline
+\texttt{preprocessing.py} & \texttt{TextCleaner}: các bước làm sạch bật/tắt được. \\
+\hline
+\texttt{features.py} & Tạo \texttt{CountVectorizer} hoặc \texttt{TfidfVectorizer}. \\
+\hline
+\texttt{models.py} & Khai báo Multinomial NB, K-NN (cosine), Decision Tree. \\
+\hline
+\texttt{pipeline.py} & \texttt{ExperimentSpec} và \texttt{build\_pipeline}. \\
+\hline
+\texttt{experiments.py} & Danh sách thí nghiệm E0--E6; thêm thí nghiệm bằng cách thêm một dòng. \\
+\hline
+\texttt{runner.py} & Chạy danh sách thí nghiệm và xuất bảng kết quả. \\
+\hline
+\texttt{evaluation.py} & Các thước đo, CV phân tầng, ma trận nhầm lẫn. \\
+\hline
+\texttt{error\_analysis.py} & Liệt kê FP/FN; từ đặc trưng spam/ham của Naive Bayes. \\
+\hline
+\texttt{sanity.py} & Kiểm tra rò rỉ, học thuộc, baseline đơn giản; đường cong học. \\
+\hline
+\texttt{eda.py}, \texttt{viz.py} & Thống kê và biểu đồ khám phá/báo cáo. \\
+\hline
+\texttt{cli.py} & Các lệnh \texttt{eda}, \texttt{run}, \texttt{viz}, \texttt{check}, \texttt{predict}. \\
+\hline
+\end{tabular}
+\Nguon{Nhóm xây dựng}
+\end{table}
+
+Thiết kế dựa trên cấu hình khai báo: mỗi thí nghiệm là một đối tượng \texttt{ExperimentSpec} (tên, mô hình, tham số mô hình, tham số làm sạch, tham số vector hóa). Cách này tách \textit{``chạy cái gì''} khỏi \textit{``chạy như thế nào''}, khiến việc ghi log tham số và mở rộng thí nghiệm trở nên tầm thường và ít lỗi.
+
+\section{Thiết lập thực nghiệm}
+
+\subsection{Chia dữ liệu và hạt giống ngẫu nhiên}
+
+\begin{itemize}
+    \item Chia \textbf{80\% huấn luyện / 20\% kiểm tra}, \texttt{stratify} theo nhãn, \texttt{random\_state}=42.
+    \item Loại bản trùng \textit{trước} khi chia để không có tin giống hệt nhau ở hai tập (kiểm chứng ở Mục~\ref{sec:sanity}, kiểm tra A1).
+    \item Kiểm định chéo phân tầng 5 fold, có xáo trộn, \texttt{random\_state}=42, \textbf{chỉ trên tập huấn luyện}.
+    \item Tiêu chí chọn mô hình: \textbf{F1 của lớp spam trung bình qua CV}, tuyệt đối không dùng tập kiểm tra để chọn.
+\end{itemize}
+
+\subsection{Danh sách thí nghiệm}
+
+Bảng~\ref{tab:thi-nghiem} là nhật ký thí nghiệm gồm một baseline, các biến thể biểu diễn/mô hình và hai thí nghiệm đối chứng về tiền xử lý.
+
+\begin{table}[H]
+\centering
+\caption{Danh sách thí nghiệm và tham số (nhật ký thí nghiệm)}
+\label{tab:thi-nghiem}
+\small
+\begin{tabular}{|c|p{3.2cm}|p{2.9cm}|p{3.3cm}|p{2.2cm}|}
+\hline
+\textbf{ID} & \textbf{Làm sạch} & \textbf{Vector hóa} & \textbf{Mô hình} & \textbf{Vai trò} \\
+\hline
+E0 & Chữ thường & BoW, unigram & MultinomialNB, $\alpha=1$ (mặc định) & \textbf{Baseline} \\
+\hline
+E1 & Chữ thường & TF-IDF, unigram & MultinomialNB, $\alpha=0{,}5$ & Đổi biểu diễn \\
+\hline
+E2 & Chữ thường & TF-IDF, $(1,2)$-gram, \texttt{min\_df}=2 & MultinomialNB, $\alpha=0{,}1$ & Thêm bigram, chỉnh $\alpha$ \\
+\hline
+E3 & Chữ thường & TF-IDF, unigram, \texttt{min\_df}=2 & K-NN, $k=5$, cosine & Thuật toán 2 \\
+\hline
+E4 & Chữ thường & TF-IDF, unigram, \texttt{min\_df}=2 & Decision Tree, \texttt{max\_depth}=20, \texttt{min\_samples\_leaf}=2 & Thuật toán 3 \\
+\hline
+E5 & Token hóa URL/tiền/số, bỏ dấu câu & Như E2 & MultinomialNB, $\alpha=0{,}1$ & Ablation (token hóa) \\
+\hline
+E6 & Bỏ dấu câu, bỏ stopword & Như E2 & MultinomialNB, $\alpha=0{,}1$ & Ablation (stopword) \\
+\hline
+\end{tabular}
+\Nguon{Nhóm xây dựng; mã nguồn \texttt{spam\_filter/experiments.py}}
+\end{table}
+
+\textbf{Lưu ý về thiết kế thí nghiệm.} E5 và E6 thay đổi \textit{đúng một khía cạnh} so với E2 (cách làm sạch), cho phép quy kết chênh lệch kết quả cho khía cạnh đó. Ngược lại E0$\to$E1$\to$E2 thay đổi đồng thời biểu diễn và tham số $\alpha$, nên để tách tác động riêng lẻ nhóm bổ sung phân tích độ nhạy theo từng tham số ở Mục~\ref{sec:nhay-tham-so}.
+
+\subsection{Môi trường tái lập}
+
+\begin{table}[H]
+\centering
+\caption{Môi trường thực nghiệm}
+\label{tab:moi-truong}
+\begin{tabular}{|p{5cm}|p{9cm}|}
+\hline
+\textbf{Thành phần} & \textbf{Phiên bản} \\
+\hline
+Python & 3.14.6 \\
+\hline
+Thư viện chính & scikit-learn \cite{scikit-learn}, NumPy \cite{numpy2020}, pandas \cite{pandas2010}, matplotlib \cite{matplotlib2007} \\
+\hline
+scikit-learn & 1.9.0 \\
+\hline
+NumPy / pandas & 2.4.1 / 3.1.0 \\
+\hline
+Tệp \texttt{requirements.txt} & Chỉ đặt phiên bản \textit{tối thiểu} (không khóa cứng) \\
+\hline
+\end{tabular}
+\Nguon{Nhóm ghi nhận khi chạy lại toàn bộ thí nghiệm}
+\end{table}
+
+Do \texttt{requirements.txt} không khóa phiên bản, kết quả có thể lệch nhẹ ở chữ số thập phân thứ ba khi dùng phiên bản thư viện khác. Các lệnh tái lập đầy đủ nằm ở Phụ lục~1.
+
+\subsection{Kiểm thử tự động}
+
+Mã nguồn đi kèm \textbf{41 bài kiểm thử} (pytest) trong năm tệp: \texttt{test\_data.py} (đọc dữ liệu, ánh xạ nhãn, loại trùng, chia phân tầng, không trùng văn bản giữa train và test, tái lập theo hạt giống), \texttt{test\_pipeline.py} (hành vi của \texttt{TextCleaner} với URL, tiền, số, stopword và việc mọi thí nghiệm đều huấn luyện và dự đoán được), \texttt{test\_evaluation.py} (đúng các thước đo và chiều của ma trận nhầm lẫn), \texttt{test\_serialization.py} (lưu rồi tải mô hình cho dự đoán giống hệt) và \texttt{test\_reporting.py} (bảng kết quả và biểu đồ báo cáo). Toàn bộ 41 kiểm thử đều đạt tại thời điểm viết báo cáo.

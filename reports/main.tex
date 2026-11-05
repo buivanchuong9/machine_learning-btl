@@ -1,0 +1,68 @@
+% !TeX program = xelatex
+% Template báo cáo thực tập tốt nghiệp - Trường Đại học Đại Nam
+% Biên dịch bằng XeLaTeX. Nên chạy 2 lần để cập nhật mục lục/danh mục.
+
+\documentclass[12pt,a4paper,oneside]{extreport}
+
+% Nạp cấu hình chung
+\input{settings}
+
+\begin{document}
+
+% =========================
+% TRANG BÌA
+% =========================
+\pagenumbering{gobble}
+\input{cover}
+
+% =========================
+% PHẦN ĐẦU BÁO CÁO
+% =========================
+\clearpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\input{frontmatter/loi_cam_doan}
+\input{frontmatter/loi_cam_on}
+\input{frontmatter/danh_muc_viet_tat}
+
+% Danh mục bảng, sơ đồ, hình
+\clearpage
+\CombinedLists
+
+% Mục lục
+\clearpage
+\tableofcontents
+
+% Mở đầu
+\clearpage
+\input{frontmatter/mo_dau}
+
+% =========================
+% NỘI DUNG CHÍNH
+% Mỗi chương là một file riêng trong thư mục chapters/
+% =========================
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\include{chapters/chuong1}
+\include{chapters/chuong2}
+\include{chapters/chuong3}
+\include{chapters/chuong4}
+\include{chapters/chuong5}
+\include{chapters/chuong6}
+\include{chapters/chuong7}
+
+% =========================
+% PHẦN CUỐI BÁO CÁO
+% =========================
+\clearpage
+\input{backmatter/ket_luan}
+
+\clearpage
+\input{backmatter/phu_luc}
+
+\clearpage
+\input{backmatter/tai_lieu_tham_khao}
+
+\end{document}

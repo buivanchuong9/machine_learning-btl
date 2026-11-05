@@ -1,0 +1,39 @@
+# LaTeX build artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.lof
+*.lot
+*.los
+*.out
+*.toc
+*.xdv
+*.synctex
+*.synctex.gz
+
+# Bibliography and index artifacts
+*.bbl
+*.bcf
+*.blg
+*.idx
+*.ilg
+*.ind
+*.run.xml
+
+# Other LaTeX temporary files
+*.nav
+*.snm
+*.vrb
+_minted-*/
+
+# Editor and operating-system files
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Keep the generated PDF for preview on GitHub
+!main.pdf

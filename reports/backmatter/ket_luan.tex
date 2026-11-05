@@ -1,0 +1,28 @@
+\UnnumberedChapter{KẾT LUẬN}
+
+\textbf{Kết quả đạt được.} Báo cáo đã xây dựng và đánh giá một pipeline phân loại tin nhắn rác hoàn chỉnh trên bộ dữ liệu SMS Spam Collection, từ dữ liệu thô đến ứng dụng demo. Pipeline loại 414 tin trùng trước khi chia, chia 80/20 có phân tầng với \texttt{random\_state}=42, ghép làm sạch, vector hóa và mô hình trong một \texttt{Pipeline} để vectorizer chỉ được \texttt{fit} trên tập huấn luyện, chọn mô hình bằng F1 lớp spam qua CV 5 fold trên tập huấn luyện. Bảy thí nghiệm (một baseline, các biến thể biểu diễn, ba thuật toán và hai thí nghiệm đối chứng tiền xử lý) được chạy và ghi log tham số.
+
+\textbf{Mô hình tốt nhất.} Cấu hình E5 (token hóa URL/tiền/số, bỏ dấu câu, TF-IDF $(1,2)$-gram với \texttt{min\_df}=2, Multinomial Naive Bayes với $\alpha=0{,}1$) đạt trên tập kiểm tra Accuracy 98,64\%, Precision 97,50\%, Recall 91,41\%, F1 lớp spam 94,35\% và ROC-AUC 0,9905, với 3 tin ham bị chặn nhầm và 11 tin spam bị bỏ lọt trong 1\,032 tin.
+
+\textbf{Các kết luận có bằng chứng vững.}
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Naive Bayes vượt K-NN và Decision Tree một cách ổn định}: khoảng cách F1 ($0{,}04$--$0{,}11$) lặp lại ở cả 10 lần chia ngẫu nhiên và lớn hơn nhiều độ dao động của phép đo.
+    \item \textbf{Accuracy là thước đo gây hiểu lầm}: mô hình luôn đoán ``ham'' đã đạt 87,6\%, và mọi mô hình đều có Accuracy 97--98,6\%, trong khi Recall của lớp spam chênh nhau tới 13 điểm phần trăm.
+    \item \textbf{Tham số làm mượt $\alpha$ có tác động lớn nhất}: với TF-IDF, $\alpha\ge0{,}5$ làm CV F1 sụt từ 0,943 xuống 0,912 rồi 0,860; mặc định của BoW không chuyển được sang TF-IDF.
+    \item \textbf{Token hóa số là bước tiền xử lý hữu ích nhất} ($+0{,}013$ CV F1), phù hợp với EDA (76,5\% spam chứa chuỗi từ 5 chữ số trở lên so với 0,1\% ham).
+    \item \textbf{Không có dấu hiệu rò rỉ hay học thuộc nghiêm trọng}: không trùng chính xác train/test; F1 giảm chỉ 0,031 trên các tin test không có bản gần giống; xáo trộn nhãn đưa F1 về 0,105; CV (0,943) khớp test (0,944).
+\end{enumerate}
+
+\textbf{Các kết luận cần được hiểu thận trọng.} Việc BoW so với TF-IDF, unigram so với bigram, và có/không bỏ stopword \textit{không} tạo ra khác biệt có thể phân biệt được khỏi nhiễu trên dữ liệu này (chênh lệch $\le0{,}01$ so với độ lệch chuẩn 0,012--0,019 khi đổi cách chia). Ưu thế của E5 so với E0 là nhỏ ($+0{,}007\pm0{,}008$, thắng 7/10 lần chia) và nhóm không tuyên bố ý nghĩa thống kê. Các thí nghiệm độ nhạy cho thấy một số cấu hình đơn giản hơn cho CV F1 tương đương hoặc cao hơn E5.
+
+\textbf{Hạn chế.}
+\begin{itemize}
+    \item \textbf{Dữ liệu}: chỉ tiếng Anh, cũ, nhỏ (5\,160 tin sau khử trùng); ham và spam đến từ các nguồn khác nhau nên mô hình học một phần dấu hiệu nguồn (\textit{lor}, \textit{da}, \textit{lt gt}); kết quả không chứng minh khả năng tổng quát hóa sang SMS hiện đại.
+    \item \textbf{Đánh giá}: tập kiểm tra chỉ có 128 spam nên mỗi lỗi thay đổi F1 khoảng 0,4 điểm phần trăm; các giá trị ngưỡng ở Bảng~\ref{tab:nguong} được đọc trên tập kiểm tra nên chỉ mang tính mô tả; không khóa phiên bản thư viện.
+    \item \textbf{Mô hình}: giả định độc lập của Naive Bayes làm xác suất kém hiệu chuẩn; mô hình không bắt được nhóm spam ``giả tin nhắn cá nhân'' (6/11 lỗi bỏ lọt là lỗi chắc chắn sai).
+    \item \textbf{Phạm vi}: chưa thử các mô hình tuyến tính như hồi quy logistic hoặc SVM, và chưa thử mô hình học sâu.
+\end{itemize}
+
+\textbf{Hướng phát triển.} Dựa trên lỗi quan sát được (Bảng~\ref{tab:de-xuat}): (i) chọn ngưỡng bằng validation và hiệu chuẩn xác suất; (ii) bổ sung đặc trưng cấu trúc và n-gram ký tự, thử hồi quy logistic/SVM tuyến tính trên cùng biểu diễn; (iii) mở rộng dữ liệu bằng spam hiện đại, đa ngôn ngữ (đặc biệt tiếng Việt) và đa nguồn để giảm thiên lệch; (iv) thử biểu diễn ngữ nghĩa (sentence embedding) cho nhóm spam viết như tin cá nhân; (v) giám sát concept drift và thiết lập vòng lặp phản hồi khi triển khai.
+
+Bài tập lớn giúp nhóm củng cố một bài học xuyên suốt: \textit{độ tin cậy của một con số kết quả quan trọng không kém con số đó cao đến đâu}. Việc chống rò rỉ dữ liệu, chọn thước đo đúng với chi phí nghiệp vụ, đo độ dao động khi đổi cách chia, và nói rõ giới hạn của dữ liệu là những thực hành nhóm sẽ tiếp tục áp dụng trong các bài toán học máy sau này.
