@@ -1,0 +1,22 @@
+# Theme: tông bạc (xám nhạt) + xám than cho điểm nhấn (chỉ ảnh hưởng giao diện; màu spam/ham trong biểu đồ giữ nguyên)
+[theme]
+base = "light"
+primaryColor = "#2B2B2B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F3F5"
+textColor = "#1A1A1A"
+borderColor = "#D3D7DC"
+
+# Bảng cuộn (st.dataframe): dòng tiêu đề bạc chữ đen — cùng kiểu với bảng tĩnh
+dataframeHeaderBackgroundColor = "#E4E7EB"
+dataframeHeaderTextColor = "#1A1A1A"
+dataframeBorderColor = "#E2E2E2"
+
+# Font: Source Sans 3 cho chữ thường (gọn, rất dễ đọc ở cỡ nhỏ, đủ dấu tiếng Việt);
+# Be Vietnam Pro cho tiêu đề và con số (đậm nét, dấu tiếng Việt rõ); JetBrains Mono cho code.
+font = "'Source Sans 3':https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap, 'Segoe UI', sans-serif"
+headingFont = "'Be Vietnam Pro':https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap, 'Segoe UI', sans-serif"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap, Consolas, monospace"
+baseFontSize = 16
+codeTextColor = "#2B2B2B"
+codeBackgroundColor = "#F0F0F0"
